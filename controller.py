@@ -99,6 +99,3 @@ def system_init():
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
-
-# test run - delete when use with API
-system_init()
