@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum_class import MemberStatus, Expertise
+from event_class import *
 
 # User & sub class
 class User:
@@ -56,7 +57,8 @@ class User:
         pass
 
     def add_certificate(self, certificate):
-        pass
+        if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
+        else: raise TypeError("Please add certificate only")
 
     def cancel_event(self, event_id):
         pass
@@ -74,7 +76,13 @@ class User:
         return self.__is_blacklist
     
     def check_certified(self, required_certified):
-        pass
+        for certificate in self.__certificate_list:
+            if certificate.get_certified_topic == required_certified:
+                if certificate.get_expired_date is not None and datetime.now() < certificate.get_expired_date: return True
+                elif certificate is None: return True
+                else: return False
+        return False
+
 
     def check_in(self, reservation_id, space_id):
         pass

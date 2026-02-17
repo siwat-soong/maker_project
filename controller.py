@@ -3,6 +3,7 @@ from user_class import *
 from enum_class import *
 from resource_class import *
 from payment_class import *
+from event_class import *
 
 class Club:
     def __init__(self, name):
@@ -96,7 +97,6 @@ def system_init():
         maker.add_resource(tool_set_a)
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
-
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")

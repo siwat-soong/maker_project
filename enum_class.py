@@ -25,3 +25,9 @@ class EquipmentType(Enum):
     THREE_D_PRINTER = "THREE_D_PRINTER"
     LASER_CUTTER = "LASER_CUTTER"
     TOOL_SET = "TOOL_SET"
+
+class EventStatus(Enum):
+    SCHEDULED = "SCHEDULED"
+    OPEN = "OPEN"
+    FULL = "FULL"
+    CLOSED = "CLOSED"
