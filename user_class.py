@@ -43,6 +43,54 @@ class User:
     def get_tel(self):
         return self.__tel
 
+    def notify(self, notification):
+        pass
+
+    def join_event(self, event_id):
+        pass
+
+    def add_invoice(self, invoice):
+        pass
+
+    def add_item_list(self, line_item):
+        pass
+
+    def add_certificate(self, certificate):
+        pass
+
+    def cancel_event(self, event_id):
+        pass
+
+    def list_reserve_history(self):
+        pass
+    
+    def cancel_reservation(self, reservation_id, cancel_date_time):
+        pass
+
+    def add_to_cart(self):
+        pass
+
+    def check_blacklist(self):
+        return self.__is_blacklist
+    
+    def check_certified(self, required_certified):
+        pass
+
+    def check_in(self, reservation_id, space_id):
+        pass
+
+    def check_out(self, reservation_id, space_id):
+        pass
+
+    def pay_invoice(self, invoice, amount):
+        pass
+
+    def reserve(self):
+        pass
+
+    def return_resource(self, reservation_id, resource_id=None):
+        pass
+
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):
         super().__init__(user_id, name, tel)
@@ -64,10 +112,10 @@ class Instructor(User):
         except:
             raise ValueError("Fee must be positive number")
 
-    def evaluate(self, controller, user_id, event_id, score):
+    def evaluate(self, user_id, event_id, score):
         pass
 
-    def list_event_attender(self, controller, event_id):
+    def list_event_attender(self,  event_id):
         pass
 
 class Member(User):
@@ -116,7 +164,7 @@ class Admin:
         if all(char.isalpha() or char.isspace() for char in name) and name != "": return name
         else: raise ValueError("Name must be character or space")
 
-    def force_cancel_membership(self, controller, user_id, reason):
+    def force_cancel_membership(self,  user_id, reason):
         pass
 
     def generate_report(self):

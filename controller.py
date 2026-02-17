@@ -2,6 +2,7 @@ from datetime import time
 from user_class import *
 from enum_class import *
 from resource_class import *
+from payment_class import *
 
 class Club:
     def __init__(self, name):
@@ -32,6 +33,10 @@ class Club:
         if isinstance(resource, Space): self.__space_list.append(resource)
         elif isinstance(resource, Equipment): self.__equipment_list.append(resource)
         elif isinstance(resource, Material): self.__material_list.append(resource)
+    
+    def add_payment_method(self, payment_method):
+        if isinstance(payment_method, PaymentMethod):
+            self.__payment_method_list.append(payment_method)
 
     # Search Method
     def search_user_by_id(self, user_id):
@@ -63,7 +68,7 @@ def system_init():
         maker = Club("maker")
         
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
-        jira = User("123", "Jira", "0123456789")
+        jira = Guest("123", "Jira", "0123456789")
         
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         
@@ -76,6 +81,9 @@ def system_init():
 
         tool_set_a = ToolSet("TOOL-001", Expertise.BASIC, EquipmentType.TOOL_SET, 5)
 
+        cash_machine = Cash()
+        qr_machine = QRCode()
+
         # Add Instance
         maker.add_user(jira)
         maker.add_instructor(thana)
@@ -86,6 +94,9 @@ def system_init():
         maker.add_resource(acrylic_a)
         maker.add_resource(laser_cutter_a)
         maker.add_resource(tool_set_a)
+        maker.add_payment_method(cash_machine)
+        maker.add_payment_method(qr_machine)
+
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
