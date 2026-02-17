@@ -9,3 +9,19 @@ class Expertise(Enum):
     ADVANCE = "ADVANCE"
     THREE_D_PRINTER = "THREE_D_PRINTER"
     LASER_CUTTER = "LASER_CUTTER"
+
+class ResourceStatus(Enum):
+    AVAILABLE = "AVAILABLE"
+    IN_USE = "IN_USE"
+    MAINTENANCE = "MAINTENANCE"
+    OUT_OF_STOCK = "OUT_OF_STOCK"
+
+class SpaceType(Enum):
+    LABORATORY = "LABORATORY"
+    HOT_DESK = "HOT_DESK"
+    MEETING_ROOM = "MEETING_ROOM"
+
+class EquipmentType(Enum):
+    THREE_D_PRINTER = "THREE_D_PRINTER"
+    LASER_CUTTER = "LASER_CUTTER"
+    TOOL_SET = "TOOL_SET"
