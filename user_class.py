@@ -74,7 +74,8 @@ class User:
         pass
 
     def add_to_cart(self):
-        pass
+        # teetee edit na
+        return True
 
     def check_blacklist(self):
         return self.__is_blacklist
