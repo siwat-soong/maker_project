@@ -4,6 +4,7 @@ from enum_class import *
 from resource_class import *
 from payment_class import *
 from event_class import *
+from transaction import *
 
 class Club:
     def __init__(self, name):
@@ -67,21 +68,15 @@ def system_init():
     try:
         # Create Instance
         maker = Club("maker")
-        
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
         jira = Guest("123", "Jira", "0123456789")
-        
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
-        
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
-
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
         acrylic_a = Acrylic("ACL-001", 20, "plate", 0, EquipmentType.LASER_CUTTER, 2, "CLEAR", "20x20")
         laser_cutter_a = LaserCutter("LSC-001", Expertise.LASER_CUTTER, EquipmentType.LASER_CUTTER, "120x120", None)
-
         tool_set_a = ToolSet("TOOL-001", Expertise.BASIC, EquipmentType.TOOL_SET, 5)
-
         cash_machine = Cash()
         qr_machine = QRCode()
 
@@ -97,6 +92,7 @@ def system_init():
         maker.add_resource(tool_set_a)
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
+
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")

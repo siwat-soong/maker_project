@@ -31,3 +31,9 @@ class EventStatus(Enum):
     OPEN = "OPEN"
     FULL = "FULL"
     CLOSED = "CLOSED"
+
+class ReserveStatus(Enum):
+    CONFIRMED = "CONFIRMED"
+    CHECKED_IN = "CHECKED_IN"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"

@@ -45,13 +45,17 @@ class User:
         return self.__tel
 
     def notify(self, notification):
-        pass
+        from transaction import Notification
+        if isinstance(notification, Notification):
+            self.__notification_list.append(notification)
 
     def join_event(self, event_id):
         pass
 
     def add_invoice(self, invoice):
-        pass
+        from transaction import Invoice
+        if isinstance(invoice, Invoice):
+            self.__notification_list.append(invoice)
 
     def add_item_list(self, line_item):
         pass
@@ -90,7 +94,7 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_invoice(self, invoice, amount):
+    def pay_invoice(self, invoice_id, amount):
         pass
 
     def reserve(self):

@@ -1,11 +1,10 @@
 from enum_class import Expertise, EventStatus
-from user_class import Instructor
 from resource_class import Space
-from user_class import User
 from datetime import datetime
 
 class Event:
     def __init__(self, event_id, event_topic, event_detail, instructor, space, max_attender, join_fee, certified_topic):
+        from user_class import Instructor
         self.__event_id = event_id
         self.__event_detail = event_detail
         self.__instructor = self.__validate_input_specific_type(instructor, Instructor)
@@ -57,6 +56,7 @@ class Event:
 
 class Certificate:
     def __init__(self, owner, event, certified_topic, certified_date, expired_date=None):
+        from user_class import User
         self.__owner = self.__validate_input_specific_type(owner, User)
         self.__event = self.__validate_input_specific_type(event, Event)
         self.__certified_topic = self.__validate_input_specific_type(certified_topic, Expertise)
@@ -64,10 +64,9 @@ class Certificate:
         self.__expired_date = self.__validate_input_specific_type(expired_date, datetime, True)
     
     # Input Validation
-    def __validate_input_specific_type(self, obj, obj_type, accept_none=False):
-        if accept_none:
-            if obj is None: return None
-        elif isinstance(obj, obj_type): return obj
+    def __validate_input_specific_type(self, obj, obj_type, none_accepted=False):
+        if none_accepted and obj is None: return None
+        elif obj is not None and isinstance(obj, obj_type): return obj
         else: raise TypeError("Wrong Type")
     
     @property
