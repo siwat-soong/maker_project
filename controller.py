@@ -27,6 +27,11 @@ class Club:
     def add_admin(self, admin):
         if isinstance(admin, Admin):
             self.__admin_list.append(admin)
+    
+    def add_resource(self, resource):
+        if isinstance(resource, Space): self.__space_list.append(resource)
+        elif isinstance(resource, Equipment): self.__equipment_list.append(resource)
+        elif isinstance(resource, Material): self.__material_list.append(resource)
 
     # Search Method
     def search_user_by_id(self, user_id):
@@ -41,10 +46,20 @@ class Club:
                 return user
         return None
 
+    def search_resource_by_id(self, resource_id):
+        for space in self.__space_list: 
+            if space.get_id == resource_id: return space
+        for eq in self.__equipment_list: 
+            if eq.get_id == resource_id: return eq
+        for mat in self.__material_list: 
+            if mat.get_id == resource_id: return mat
+        return None
+
 
 # Init Function
 def system_init():
     try:
+        # Create Instance
         maker = Club("maker")
         
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
@@ -61,10 +76,22 @@ def system_init():
 
         tool_set_a = ToolSet("TOOL-001", Expertise.BASIC, EquipmentType.TOOL_SET, 5)
 
+        # Add Instance
+        maker.add_user(jira)
+        maker.add_instructor(thana)
+        maker.add_resource(lab_a)
+        maker.add_resource(red_filament)
+        maker.add_resource(printer_a)
+        maker.add_resource(wooden_plank)
+        maker.add_resource(acrylic_a)
+        maker.add_resource(laser_cutter_a)
+        maker.add_resource(tool_set_a)
 
-        print("-"*5, " ✅ Init Success ", sep="", end="-"*5)
+        print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
+        print("\n")
     except Exception as e:
-        print(f"❌ {e}")
+        print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
+        print(f"\n - {e}")
 
 # test run - delete when use with API
 system_init()

@@ -7,6 +7,10 @@ class Resource(ABC):
         self.__resource_id = resource_id
         self.__status = ResourceStatus.AVAILABLE
     
+    @property
+    def get_id(self):
+        return self.__resource_id
+    
     def update_status(self, status):
         if isinstance(status, ResourceStatus):
             self.__status = status
@@ -107,7 +111,14 @@ class LaserCutter(Equipment):
 class ToolSet(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, tool_count):
         super().__init__(resource_id, required_cert, eq_type)
-        self.__tool_count = tool_count
+        self.__tool_count = self.__validate_input_positive_amount(tool_count)
+    
+    # Input Validation
+    def __validate_input_positive_amount(self, tool_count):
+        try:
+            if float(tool_count) > 0: return tool_count
+            else: raise Exception()
+        except: raise ValueError("Count must greater than 0")
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
