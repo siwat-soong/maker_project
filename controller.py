@@ -96,6 +96,8 @@ def system_init():
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
+
+        return maker
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
