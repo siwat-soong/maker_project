@@ -43,6 +43,14 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
+    
+    @property
+    def get_user_reservation(self):
+        return self.__reservation_list
+    
+    @property
+    def get_user_item_list(self):
+        return self.__line_item_list
 
     def notify(self, notification):
         from transaction import Notification
@@ -58,7 +66,9 @@ class User:
             self.__notification_list.append(invoice)
 
     def add_item_list(self, line_item):
-        pass
+        from transaction import LineItem
+        if isinstance(line_item, LineItem):
+            self.__line_item_list.append(line_item)
 
     def add_certificate(self, certificate):
         if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
@@ -81,6 +91,8 @@ class User:
         return self.__is_blacklist
     
     def check_certified(self, required_certified):
+        if required_certified is None: return True
+
         for certificate in self.__certificate_list:
             if certificate.get_certified_topic == required_certified:
                 if certificate.get_expired_date is not None and datetime.now() < certificate.get_expired_date: return True

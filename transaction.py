@@ -89,6 +89,14 @@ class LineItem:
     @property
     def get_resource(self):
         return self.__resource
+
+    @property
+    def get_start_date_time(self):
+        return self.__start_date_time
+    
+    @property
+    def get_end_date_time(self):
+        return self.__end_date_time
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
