@@ -2,7 +2,7 @@ from controller import *
 from fastapi import FastAPI
 import uvicorn
 
-system_init()
+sys = system_init()
 
 ''' API Goes Here '''
 app = FastAPI()
