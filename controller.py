@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, datetime, timedelta
 from user_class import *
 from enum_class import *
 from resource_class import *
@@ -61,6 +61,11 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    
+    def search_space_by_id(self, space_id):
+        for space in self.__space_list:
+            if space.get_id == space_id: return space
+        return None
 
 
 # Init Function
@@ -69,14 +74,14 @@ def system_init():
         # Create Instance
         maker = Club("maker")
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
-        jira = Guest("123", "Jira", "0123456789")
+        jira = User("456", "Jira", "0123456789")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
-        printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
+        printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, lab_a , "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
         acrylic_a = Acrylic("ACL-001", 20, "plate", 0, EquipmentType.LASER_CUTTER, 2, "CLEAR", "20x20")
-        laser_cutter_a = LaserCutter("LSC-001", Expertise.LASER_CUTTER, EquipmentType.LASER_CUTTER, "120x120", None)
-        tool_set_a = ToolSet("TOOL-001", Expertise.BASIC, EquipmentType.TOOL_SET, 5)
+        laser_cutter_a = LaserCutter("LSC-001", Expertise.LASER_CUTTER, EquipmentType.LASER_CUTTER, lab_a, "120x120", None)
+        tool_set_a = ToolSet("TOOL-001", None, EquipmentType.TOOL_SET, lab_a, 5)
         cash_machine = Cash()
         qr_machine = QRCode()
 
@@ -93,6 +98,15 @@ def system_init():
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
 
+        line1 = LineItem(lab_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
+        line2 = LineItem(printer_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
+        line3 = LineItem(laser_cutter_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
+
+        line_list = [line1, line2, line3]
+
+        rsv = Reservation(jira, line_list)
+
+        jira.add_rsv(rsv)
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
@@ -101,3 +115,5 @@ def system_init():
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
+
+system_init()

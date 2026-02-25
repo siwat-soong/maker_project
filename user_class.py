@@ -8,6 +8,7 @@ class User:
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
+        self.__role = "Member"
         self.__certificate_list = []
         self.__notification_list = []
         self.__reservation_list = []
@@ -43,6 +44,13 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
+    
+    @property
+    def get_role(self):
+        return self.__role
+    
+    def add_rsv(self, rsv):
+        self.__reservation_list.append(rsv)
 
     def notify(self, notification):
         from transaction import Notification
@@ -102,6 +110,11 @@ class User:
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+
+    def search_reservation_by_id(self, reservation_id):
+        for res in self.__reservation_list:
+            if res.get_id == reservation_id: return res
+        return None
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):

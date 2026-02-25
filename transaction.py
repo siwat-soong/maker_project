@@ -6,10 +6,15 @@ class Reservation:
     ID_COUNTER = 1
     
     def __init__(self, owner, item_list):
-        self.__rsv_id = f"REV-{str(uuid.uuid4().int)[:10]}"
+        # self.__rsv_id = f"REV-{str(uuid.uuid4().int)[:10]}"
+        self.__rsv_id = "123"
         self.__owner = self.__validate_input_owner(owner)
         self.__item_list = item_list
         self.__status = ReserveStatus.CONFIRMED
+    
+    @property
+    def get_id(self):
+        return self.__rsv_id
     
     # Input Validation
     def __validate_input_owner(self, owner):
@@ -47,6 +52,24 @@ class Reservation:
     def check_late_return(self):
         pass
 
+    def search_line_item_by_resource(self, resource):
+        for item in self.__item_list:
+            if item.get_resource.get_id == resource.get_id:
+                return item
+        return None
+
+    def calculate_check_out_cost(self, space_lit, check_out_time, damage_item_id_list):
+
+        dur = space_lit.calculate_duration(check_out_time)
+        overtime_fee = space_lit.calculate_overtime(check_out_time)
+
+        for item in self.__item_list:
+            rs = item.get_resource
+            from resource_class import Equipment
+            if isinstance(rs, Equipment):
+                if rs.get_location.get_id == space_lit.get_resource.get_id:
+                    rs.calculate_fee(self.__owner, item.get_amount, dur)
+
 class Invoice:
     def __init__(self, purchased_user, payment_method, event, rsv, cost):
         from event_class import Event
@@ -83,12 +106,15 @@ class LineItem:
         from resource_class import Resource
         self.__resource = self.__validate_input_specific_type(resource, Resource)
         self.__amount = self.__validate_input_positive_number(amount)
-        self.__start_date_time = self.__validate_input_specific_type(start_date_time, datetime)
-        self.__end_date_time = self.__validate_input_specific_type(end_date_time, datetime)
+        self.__rsv_time = TimeRange(start_date_time, end_date_time)
 
     @property
     def get_resource(self):
         return self.__resource
+    
+    @property
+    def get_amount(self):
+        return self.__amount
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
@@ -107,6 +133,17 @@ class LineItem:
     def calculate_sub_total(self):
         pass
 
+    def calculate_duration(self, check_out_time):
+        return self.__rsv_time.get_duration(check_out_time)
+    
+    def calculate_overtime(self, check_out_time):
+        actual_duration = self.calculate_duration(check_out_time)
+        duration = self.__rsv_time.get_duration()
+        if (actual_duration.total_seconds / 60) > (duration.total_seconds / 60) + 15:
+            return 100
+        else: return 0
+
+
 class Notification:
     def __init__(self, target, topic, detail):
         from user_class import User
@@ -118,3 +155,19 @@ class Notification:
     def __validate_input_specific_type(self, obj, obj_type):
         if isinstance(obj, obj_type): return obj
         else: raise TypeError("Wrong Type")
+
+class TimeRange:
+    def __init__(self, start_time: datetime, end_time: datetime):
+        if start_time > end_time: raise Exception()
+        self.__start_time = start_time
+        self.__end_time = end_time
+    
+    def get_duration(self, end_time: datetime=None):
+        if end_time is None: return self.__end_time - self.__start_time
+        else: return end_time - self.__start_time
+    
+    def check_overlap(self, start_time: datetime, end_time: datetime):
+        if (self.__start_time <= start_time <= self.__end_time): return True
+        elif (self.__start_time <= end_time <= self.__end_time): return True
+        elif (start_time < self.__start_time and end_time > self.__end_time): return True
+        else: return False

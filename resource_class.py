@@ -55,10 +55,11 @@ class Space(Resource):
         pass
 
 class Equipment(Resource):
-    def __init__(self, resource_id, required_cert, eq_type):
+    def __init__(self, resource_id, required_cert, eq_type, location):
         super().__init__(resource_id)
         self.__required_cert = self.__validate_input_specific_type(required_cert, Expertise)
         self.__eq_type = self.__validate_input_specific_type(eq_type, EquipmentType)
+        self.__location = self.__validate_input_specific_type(location, Space)
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
@@ -69,6 +70,10 @@ class Equipment(Resource):
     def get_eq_type(self):
         return self.__eq_type
     
+    @property
+    def get_location(self):
+        return self.__location
+    
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
         pass
@@ -77,8 +82,8 @@ class Equipment(Resource):
         pass
 
 class ThreeDPrinter(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, print_volume, current_filament):
-        super().__init__(resource_id, required_cert, eq_type)
+    def __init__(self, resource_id, required_cert, eq_type, location, print_volume, current_filament):
+        super().__init__(resource_id, required_cert, eq_type, location)
         self.__print_volume = print_volume
         self.__current_filament = self.__validate_input_current_filament(current_filament)
         self.__filament_usage = 0
@@ -90,14 +95,16 @@ class ThreeDPrinter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        if self.__current_filament is not None:
+            if user.get_role == "Member": return 0.5 * (duration.total_seconds / 60) * amount
+            else: return (duration.total_seconds / 60) * amount
 
 class LaserCutter(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, work_area_size, current_material):
-        super().__init__(resource_id, required_cert, eq_type)
+    def __init__(self, resource_id, required_cert, eq_type, location, work_area_size, current_material):
+        super().__init__(resource_id, required_cert, eq_type, location)
         self.__print_volume = work_area_size
-        self.__current_filament = self.__validate_input_current_material(current_material)
-        self.__filament_usage = 0
+        self.__current_material = self.__validate_input_current_material(current_material)
+        self.__material_usage = 0
     
     # Input validation
     def __validate_input_current_material(self, material):
@@ -106,11 +113,13 @@ class LaserCutter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        if self.__current_material is not None:
+            if user.get_role == "Member": return 5 * (duration.total_seconds / 60) * amount
+            else: return 10 * (duration.total_seconds / 60) * amount
 
 class ToolSet(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, tool_count):
-        super().__init__(resource_id, required_cert, eq_type)
+    def __init__(self, resource_id, required_cert, eq_type, location, tool_count):
+        super().__init__(resource_id, required_cert, eq_type, location)
         self.__tool_count = self.__validate_input_positive_amount(tool_count)
     
     # Input Validation
