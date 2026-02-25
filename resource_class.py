@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum_class import ResourceStatus, SpaceType, EquipmentType, Expertise
-from datetime import time
+from datetime import time, datetime
 
 class Resource(ABC):
     def __init__(self, resource_id):
@@ -49,7 +49,13 @@ class Space(Resource):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        dur_in_hours = duration.total_seconds() / 3600
+        fee = 0
+        if user.get_role == "Member":
+            if dur_in_hours > 2: fee = int(dur_in_hours - 2) * 20
+        else:
+            fee = int((dur_in_hours / 3600)) * 50
+        return fee
     
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
         pass
@@ -86,7 +92,7 @@ class ThreeDPrinter(Equipment):
         super().__init__(resource_id, required_cert, eq_type, location)
         self.__print_volume = print_volume
         self.__current_filament = self.__validate_input_current_filament(current_filament)
-        self.__filament_usage = 0
+        self.__filament_usage = 50
     
     # Input validation
     def __validate_input_current_filament(self, filament):
@@ -95,9 +101,16 @@ class ThreeDPrinter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        if self.__current_filament is not None:
-            if user.get_role == "Member": return 0.5 * (duration.total_seconds / 60) * amount
-            else: return (duration.total_seconds / 60) * amount
+        fee = 0
+
+        if user.get_role == "Member": fee =  0.5 * int(duration.total_seconds() / 60) * amount
+        else: fee = int(duration.total_seconds() / 60) * amount
+
+        if self.__current_filament is not None: 
+            fee += self.__current_filament.calculate_fee(user, self.__filament_usage, duration)
+            return fee
+        else:
+            return fee * 1.2
 
 class LaserCutter(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, location, work_area_size, current_material):
@@ -113,9 +126,14 @@ class LaserCutter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        if self.__current_material is not None:
-            if user.get_role == "Member": return 5 * (duration.total_seconds / 60) * amount
-            else: return 10 * (duration.total_seconds / 60) * amount
+        fee = 0
+        if user.get_role == "Member": fee =  5 * int(duration.total_seconds() / 60) * amount
+        else: fee = 10 * int(duration.total_seconds() / 60) * amount
+
+        if self.__current_material is not None: 
+            fee += self.__current_material.calculate_fee(user, self.__material_usage, duration)
+            return fee
+        else: return fee * 1.2
 
 class ToolSet(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, location, tool_count):
@@ -131,7 +149,7 @@ class ToolSet(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        return 
 
 class Material(Resource):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine):
@@ -198,7 +216,7 @@ class Filament(Material):
         except: raise ValueError("Diameter must greater than 0")
 
     def calculate_fee(self, user, amount, duration):
-        pass
+        return 2 * amount
 
 class Acrylic(Material):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, color, dimension):
@@ -215,7 +233,7 @@ class Acrylic(Material):
         except: raise ValueError("Thickness must greater than 0")
 
     def calculate_fee(self, user, amount, duration):
-        pass
+        return 4 * amount
 
 class Plank(Material):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, wood_type):
@@ -231,4 +249,4 @@ class Plank(Material):
         except: raise ValueError("Thickness must greater than 0")
 
     def calculate_fee(self, user, amount, duration):
-        pass
+        return 3 * amount

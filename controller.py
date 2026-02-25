@@ -98,13 +98,14 @@ def system_init():
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
 
-        line1 = LineItem(lab_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
-        line2 = LineItem(printer_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
-        line3 = LineItem(laser_cutter_a, 1, datetime.now(), datetime.now() + timedelta(days = 1))
+        line1 = LineItem(lab_a, 1, datetime.now(), datetime.now() + timedelta(hours= 2))
+        line2 = LineItem(printer_a, 1, datetime.now(), datetime.now() + timedelta(hours= 2))
+        # line3 = LineItem(laser_cutter_a, 1, datetime.now(), datetime.now() + timedelta(hours= 1))
 
-        line_list = [line1, line2, line3]
+        line_list = [line1, line2]
 
         rsv = Reservation(jira, line_list)
+        rsv.update_status(ReserveStatus.CHECKED_IN)
 
         jira.add_rsv(rsv)
 
@@ -115,5 +116,3 @@ def system_init():
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
-
-system_init()

@@ -16,6 +16,13 @@ class Reservation:
     def get_id(self):
         return self.__rsv_id
     
+    @property
+    def get_status(self):
+        return self.__status
+    
+    def update_status(self, status):
+        self.__status = status
+    
     # Input Validation
     def __validate_input_owner(self, owner):
         from user_class import User
@@ -44,7 +51,7 @@ class Reservation:
         pass
 
     def calculate_fine(self):
-        pass
+        return 100
     
     def return_items(self, return_date):
         pass
@@ -59,16 +66,30 @@ class Reservation:
         return None
 
     def calculate_check_out_cost(self, space_lit, check_out_time, damage_item_id_list):
+        
+        fee = 0
 
         dur = space_lit.calculate_duration(check_out_time)
-        overtime_fee = space_lit.calculate_overtime(check_out_time)
+        fee += space_lit.calculate_overtime(check_out_time)
 
         for item in self.__item_list:
             rs = item.get_resource
+            
             from resource_class import Equipment
             if isinstance(rs, Equipment):
                 if rs.get_location.get_id == space_lit.get_resource.get_id:
-                    rs.calculate_fee(self.__owner, item.get_amount, dur)
+                    fee += rs.calculate_fee(self.__owner, item.get_amount, dur)
+                    from enum_class import ResourceStatus
+                    if damage_item_id_list is not None and rs.get_id in damage_item_id_list:
+                        fee += self.calculate_fine()
+                        rs.update_status(ResourceStatus.MAINTENANCE)
+                    else: rs.update_status(ResourceStatus.AVAILABLE)
+
+        space = space_lit.get_resource
+        fee += space.calculate_fee(self.__owner, space_lit.get_amount, dur)
+        
+        import math
+        return math.ceil(float(fee))
 
 class Invoice:
     def __init__(self, purchased_user, payment_method, event, rsv, cost):
@@ -77,7 +98,7 @@ class Invoice:
         from payment_class import PaymentMethod
         self.__inv_id = f"INV-{str(uuid.uuid4().int)[:10]}"
         self.__purchased_user = self.__validate_input_specific_type(purchased_user, User)
-        self.__payment_method = self.__validate_input_specific_type(payment_method, PaymentMethod)
+        self.__payment_method = self.__validate_input_specific_type(payment_method, PaymentMethod, True)
         self.__event = self.__validate_input_specific_type(event, Event, True)
         self.__rsv = self.__validate_input_specific_type(rsv, Reservation, True)
         self.__cost = self.__validate_input_positive_number(cost)
@@ -139,7 +160,7 @@ class LineItem:
     def calculate_overtime(self, check_out_time):
         actual_duration = self.calculate_duration(check_out_time)
         duration = self.__rsv_time.get_duration()
-        if (actual_duration.total_seconds / 60) > (duration.total_seconds / 60) + 15:
+        if (actual_duration.total_seconds() / 60) > (duration.total_seconds() / 60) + 15:
             return 100
         else: return 0
 
