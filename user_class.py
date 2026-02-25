@@ -95,8 +95,8 @@ class User:
 
         for certificate in self.__certificate_list:
             if certificate.get_certified_topic == required_certified:
-                if certificate.get_expired_date is not None and datetime.now() < certificate.get_expired_date: return True
-                elif certificate is None: return True
+                if certificate.get_expired_date is not None and  datetime.now() < certificate.get_expired_date: return True
+                elif certificate is None or certificate.get_expired_date is None: return True
                 else: return False
         return False
 

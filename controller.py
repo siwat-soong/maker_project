@@ -101,6 +101,10 @@ def system_init():
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
 
+        # ev1 = Event("WS-01", "", "", thana, lab_a, 10, 20, Expertise.LASER_CUTTER)
+        # cert = Certificate(jira, ev1, Expertise.LASER_CUTTER, datetime.now(), datetime.now().replace(year=datetime.now().year + 1))
+        # jira.add_certificate(cert)
+
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
 

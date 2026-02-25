@@ -24,9 +24,8 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount):
         resource = sys.search_resource_by_id(item_id)
 
         # Validate duplicate cart added
-        res = list()
         for item in target_user.get_user_item_list:
-            if item.get_resource.get_id == item_id and item.get_resource.check_overlap_date_time(start_time, item.get_start_date_time, end_time, item.get_end_date_time):
+            if item.get_resource.get_id == item_id and item.check_overlap_date_time(start_time, end_time):
                 return "⚠️ คุณเคยเพิ่มสินค้าที่มีรายละเอียดเดียวกันแล้ว"
 
         # Validate all confirm reservation

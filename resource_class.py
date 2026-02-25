@@ -27,7 +27,7 @@ class Resource(ABC):
             return self.check_deductible(amount)
         elif isinstance(self, (Space, Equipment)): 
             for item in line_item_list:
-                if self.check_overlap_date_time(start_time, item.get_start_date_time, end_time, item.get_end_date_time):
+                if item.check_overlap_date_time(start_time, end_time):
                     return False
             
             if isinstance(self, Equipment) and not user.check_certified(self.get_cert): return False
@@ -38,9 +38,6 @@ class Resource(ABC):
             if start_time < datetime.now(): return False
 
             return True
-    
-    def check_overlap_date_time(self, start_time_1, start_time_2, end_time_1, end_time_2):
-        return start_time_2 <= start_time_1 <= end_time_2 or start_time_2 <= end_time_1 <= end_time_2 or (start_time_1 < start_time_2 and end_time_1 > end_time_2)
 
     @abstractmethod
     def calculate_fee(self, user, amount, duration):
