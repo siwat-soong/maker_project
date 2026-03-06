@@ -83,7 +83,6 @@ def system_init():
         jane = User("USE-001","Jane","0123456789")
         jira = User("123", "Jira", "0123456789")
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
-        jira = Guest("123", "Jira", "0123456789")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
