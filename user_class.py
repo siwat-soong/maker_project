@@ -5,6 +5,7 @@ from enum_class import *
 
 # User & sub class
 class User:
+    MEMBER_FEE = 100
     def __init__(self, user_id, name, tel):
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
@@ -17,6 +18,7 @@ class User:
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
+
 
     # Print Method
     def __repr__(self):
@@ -45,6 +47,11 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
+    
+    @property
+    def get_role(self):
+        return self.__role
+    
     @property
     def get_max_reserve_days(self):
         if self.__role == UserRole.ANNUALMEMBER:
@@ -120,6 +127,7 @@ class User:
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+    
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):
