@@ -1,6 +1,7 @@
 from datetime import datetime
-from enum_class import MemberStatus, Expertise
+from enum_class import UserRole, Expertise
 from event_class import *
+from enum_class import *
 
 # User & sub class
 class User:
@@ -8,10 +9,11 @@ class User:
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
+        self.__role = UserRole.GUEST
         self.__certificate_list = []
         self.__notification_list = []
         self.__reservation_list = []
-        self.__invoice_list = []
+        self.__receive_list = []
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
@@ -43,7 +45,23 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
-
+    @property
+    def get_max_reserve_days(self):
+        if self.__role == UserRole.ANNUALMEMBER:
+            return 14
+        else : return 1
+    def __repr__(self):
+        if self.__role == UserRole.ANNUALMEMBER:
+            return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
+        else : return f"User not is Member"
+    def update_status(self, status):
+            if isinstance(status, UserRole.ANNUALMEMBER):
+                self.__member_status = status
+                current_date = datetime.now()
+                self.__registry_date = current_date
+                self.__expired_date = current_date.replace(year=current_date.year + 1)
+                self.__monthly_quota = 120 # minutes
+    
     def notify(self, notification):
         from transaction import Notification
         if isinstance(notification, Notification):
@@ -52,10 +70,10 @@ class User:
     def join_event(self, event_id):
         pass
 
-    def add_invoice(self, invoice):
-        from transaction import Invoice
-        if isinstance(invoice, Invoice):
-            self.__notification_list.append(invoice)
+    def add_receive(self, receive):
+        from transaction import Receive
+        if isinstance(receive, Receive):
+            self.__notification_list.append(receive)
 
     def add_item_list(self, line_item):
         pass
@@ -94,7 +112,7 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_invoice(self, invoice_id, amount):
+    def pay_receive(self, invoice_id, amount):
         pass
 
     def reserve(self):
@@ -129,40 +147,6 @@ class Instructor(User):
 
     def list_event_attender(self,  event_id):
         pass
-
-class Member(User):
-    MAX_RESERVE_DAY = 14
-
-    def __init__(self, user_id, name, tel):
-        super().__init__(user_id, name, tel)
-        self.__member_status = MemberStatus.NORMAL
-
-        current_date = datetime.now()
-        self.__registry_date = current_date
-        self.__expired_date = current_date.replace(year=current_date.year + 1)
-        self.__monthly_quota = 120 # minutes
-
-    def __repr__(self):
-        return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__member_status.value}\nEXPIRED DATE = {self.__expired_date}\n"
-
-    @property
-    def get_max_reserve_days(self):
-        return self.MAX_RESERVE_DAY
-
-    def update_status(self, status):
-        if isinstance(status, MemberStatus):
-            self.__member_status = status
-    
-
-class Guest(User):
-    MAX_RESERVE_DAY = 1
-    def __init__(self, user_id, name, tel):
-        super().__init__(user_id, name, tel)
-        self.__temp_registry_date = datetime.now()
-    
-    @property
-    def get_max_reserve_days(self):
-        return self.MAX_RESERVE_DAY
 
 # Admin class
 class Admin:
