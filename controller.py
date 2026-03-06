@@ -5,7 +5,6 @@ from resource_class import *
 from payment_class import *
 from event_class import *
 from transaction import *
-
 class Club:
     def __init__(self, name):
         self.__name = name
@@ -49,7 +48,7 @@ class Club:
     
     def search_member_by_id(self, user_id):
         for user in self.__user_list:
-            if isinstance(user, Member) and user.get_id == user_id:
+            if isinstance(user, UserRole.ANNUALMEMBER) and user.get_id == user_id:
                 return user
         return None
 
@@ -69,7 +68,7 @@ def system_init():
         # Create Instance
         maker = Club("maker")
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
-        jira = Guest("123", "Jira", "0123456789")
+        jira = User("123", "Jira", "0123456789")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
