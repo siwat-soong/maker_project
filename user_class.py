@@ -13,7 +13,7 @@ class User:
         self.__certificate_list = []
         self.__notification_list = []
         self.__reservation_list = []
-        self.__receive_list = []
+        self.__receipt_list = []
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
@@ -70,10 +70,10 @@ class User:
     def join_event(self, event_id):
         pass
 
-    def add_receive(self, receive):
-        from transaction import Receive
-        if isinstance(receive, Receive):
-            self.__notification_list.append(receive)
+    def add_receipt(self, receipt):
+        from transaction import Receipt
+        if isinstance(receipt, Receipt):
+            self.__notification_list.append(receipt)
 
     def add_item_list(self, line_item):
         pass
@@ -112,7 +112,7 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_receive(self, invoice_id, amount):
+    def pay_receipt(self, invoice_id, amount):
         pass
 
     def reserve(self):

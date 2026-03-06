@@ -47,7 +47,7 @@ class Reservation:
     def check_late_return(self):
         pass
 
-class Receive:
+class Receipt:
     def __init__(self, purchased_user, payment_method, event, rsv, cost):
         from event_class import Event
         from user_class import User
