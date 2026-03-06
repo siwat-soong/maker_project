@@ -1,6 +1,11 @@
 from datetime import datetime
 from enum_class import MemberStatus, Expertise
 from event_class import *
+from enum import Enum
+
+class UserRole(Enum):
+    ANNUAL_MEMBER = "annual member"
+    GUEST = "guest"
 
 # User & sub class
 class User:
@@ -8,6 +13,7 @@ class User:
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
+        self.__role = UserRole.GUEST
         self.__certificate_list = []
         self.__notification_list = []
         self.__reservation_list = []
@@ -43,6 +49,14 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
+    
+    @property
+    def role(self):
+        return self.__role
+    
+    def change_role(self, role):
+        if isinstance(role, UserRole):
+            self.__role = role
 
     def notify(self, notification):
         from transaction import Notification
@@ -52,14 +66,15 @@ class User:
     def join_event(self, event_id):
         pass
 
-    def add_invoice(self, invoice):
+    def create_invoice(self, user_id, payment_method, event, rsv, cost):
+        invoice = (user_id, payment_method, event, rsv, cost)
         from transaction import Invoice
         if isinstance(invoice, Invoice):
-            self.__notification_list.append(invoice)
+            self.__invoice_list.append(invoice)
 
     def add_item_list(self, line_item):
         pass
-
+        
     def add_certificate(self, certificate):
         if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
         else: raise TypeError("Please add certificate only")
