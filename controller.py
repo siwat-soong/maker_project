@@ -6,7 +6,8 @@ from payment_class import *
 from event_class import *
 from transaction import *
 
-class Club:
+class Club: 
+    MEMBER_FEE = 100
     def __init__(self, name):
         self.__name = name
         self.__user_list = []
@@ -62,14 +63,27 @@ class Club:
             if mat.get_id == resource_id: return mat
         return None
 
+    def add_member(self, user_id):
+        user = self.search_user_by_id(user_id)
+        if not user:
+            return "user not found"
+        else: 
+            if user.check_blacklist():
+                return "You're blacklist"
+            else: 
+                user.change_role(UserRole.ANNUAL_MEMBER)
+                user.create_invoice(user_id, None, None, None, Club.MEMBER_FEE)
+                role = user.role.value
+                return f"success! now you are {role}"
 
 # Init Function
 def system_init():
     try:
         # Create Instance
         maker = Club("maker")
+        jane = User("USE-001","Jane","0123456789")
+        jira = User("123", "Jira", "0123456789")
         thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
-        jira = Guest("123", "Jira", "0123456789")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
@@ -81,6 +95,7 @@ def system_init():
         qr_machine = QRCode()
 
         # Add Instance
+        maker.add_user(jane)
         maker.add_user(jira)
         maker.add_instructor(thana)
         maker.add_resource(lab_a)
@@ -92,7 +107,8 @@ def system_init():
         maker.add_resource(tool_set_a)
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
-
+        
+        maker.add_member(jane.get_id)
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
