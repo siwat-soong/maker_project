@@ -1,8 +1,8 @@
 from enum import Enum
 
-class MemberStatus(Enum):
-    NORMAL = "NORMAL"
-    SUSPENDED = "SUSPENDED"
+class UserRole(Enum):
+    ANNUALMEMBER = "Annual Member"
+    GUEST = "GUEST"
 
 class Expertise(Enum):
     BASIC = "BASIC"
@@ -12,10 +12,11 @@ class Expertise(Enum):
 
 class ResourceStatus(Enum):
     AVAILABLE = "AVAILABLE"
+    RESERVED = "RESERVED"
     IN_USE = "IN_USE"
     MAINTENANCE = "MAINTENANCE"
     OUT_OF_STOCK = "OUT_OF_STOCK"
-
+    
 class SpaceType(Enum):
     LABORATORY = "LABORATORY"
     HOT_DESK = "HOT_DESK"
@@ -35,5 +36,6 @@ class EventStatus(Enum):
 class ReserveStatus(Enum):
     CONFIRMED = "CONFIRMED"
     CHECKED_IN = "CHECKED_IN"
+    PENDING = "PENDING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
