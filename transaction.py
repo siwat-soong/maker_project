@@ -1,5 +1,9 @@
 from enum_class import ReserveStatus
 from datetime import datetime
+from resource import *
+from enum_class import *
+from event_class import *
+from user_class import *
 import uuid
 
 class Reservation:
@@ -46,37 +50,62 @@ class Reservation:
 
     def check_late_return(self):
         pass
-
+class Invoice:
+    def __init__(self,user,invoice_id,status,line_item_list = None,event=None):
+        self.__user = user
+        self.__invoice_id = invoice_id
+        self.__line_item_list = line_item_list
+        self.__event = event
+        self.__status = status
+        self.__price = 0
+    def calculate_total_price(self):
+        if self.__line_item_list != None:
+            for line_item in self.__line_item_:
+                self.__price+=line_item.calculate_fee(self.__user,line_item.get_amount,None)
+        if self.__event != None:
+            self.__price+=self.__event.join_fee
+        if self.__user.get_role == UserRole.GUEST:
+                self.__price += User.MEMBER_FEE
+    @property
+    def user(self):
+        return self.__user
+    @property 
+    def invoice_id(self):
+        return self.__invoice_id
+    @property
+    def detail(self):
+        pass
+    
+        
+        
 class Receipt:
-    def __init__(self, purchased_user, payment_method, event, rsv, cost):
+    def __init__(self, purchased_user, payment_method, invoice):
         from event_class import Event
         from user_class import User
         from payment_class import PaymentMethod
-        self.__inv_id = f"INV-{str(uuid.uuid4().int)[:10]}"
+        self.__receipt_id = f"INV-{str(uuid.uuid4().int)[:10]}"
         self.__purchased_user = self.__validate_input_specific_type(purchased_user, User)
         self.__payment_method = self.__validate_input_specific_type(payment_method, PaymentMethod)
-        self.__event = self.__validate_input_specific_type(event, Event, True)
-        self.__rsv = self.__validate_input_specific_type(rsv, Reservation, True)
-        self.__cost = self.__validate_input_positive_number(cost)
-        self.__is_purchased = False
+        self.__invoice = self.__validate_input_specific_type(invoice, Invoice)
+    @property
+    def receipt_id(self):
+        return self.__receipt_id
+    @property
+    def purchased_user(self):
+        return self.__purchased_user
+    @property
+    def payment_method(self):
+        return self.__payment_method
+    @property
+    def invoice(self):
+        return self.__invoice
+
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type, none_accepted=False):
         if none_accepted and obj is None: return None
         elif obj is not None and isinstance(obj, obj_type): return obj
         else: raise TypeError("Wrong Type")
-    
-    def __validate_input_positive_number(self, number):
-        try:
-            if float(number) >= 0: return number
-            else: raise Exception()
-        except: raise ValueError("Cost below 0")
-
-    def is_purchased(self):
-        return self.__is_purchased
-
-    def mark_as_paid(self):
-        self.__is_purchased = True
 
 class LineItem:
     def __init__(self, resource, amount, start_date_time, end_date_time):
@@ -89,6 +118,9 @@ class LineItem:
     @property
     def get_resource(self):
         return self.__resource
+    @property 
+    def get_amount(self) :
+        return self.__amount
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
