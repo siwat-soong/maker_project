@@ -40,10 +40,6 @@ class Club:
         if isinstance(payment_method, PaymentMethod):
             self.__payment_method_list.append(payment_method)
 
-    def add_event(self, event):
-        if isinstance(event, Event):
-            self.__event_list.append(event)
-
     # Search Method
     def search_user_by_id(self, user_id):
         for user in self.__user_list:
@@ -53,7 +49,7 @@ class Club:
     
     def search_member_by_id(self, user_id):
         for user in self.__user_list:
-            if isinstance(user, UserRole.ANNUALMEMBER) and user.get_id == user_id:
+            if (user.get_role == UserRole.ANNUALMEMBER ) and user.get_id == user_id:
                 return user
         return None
 

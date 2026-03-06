@@ -4,6 +4,7 @@ from event_class import *
 
 # User & sub class
 class User:
+    MEMBER_FEE = 100
     def __init__(self, user_id, name, tel):
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
@@ -16,6 +17,7 @@ class User:
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
+
 
     # Print Method
     def __repr__(self):
@@ -44,7 +46,28 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
-
+    
+    @property
+    def get_role(self):
+        return self.__role
+    
+    @property
+    def get_max_reserve_days(self):
+        if self.__role == UserRole.ANNUALMEMBER:
+            return 14
+        else : return 1
+    def __repr__(self):
+        if self.__role == UserRole.ANNUALMEMBER:
+            return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
+        else : return f"User not is Member"
+    def update_status(self, status):
+            if isinstance(status, UserRole.ANNUALMEMBER):
+                self.__member_status = status
+                current_date = datetime.now()
+                self.__registry_date = current_date
+                self.__expired_date = current_date.replace(year=current_date.year + 1)
+                self.__monthly_quota = 120 # minutes
+    
     def notify(self, notification):
         from transaction import Notification
         if isinstance(notification, Notification):
@@ -103,6 +126,7 @@ class User:
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+    
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):
