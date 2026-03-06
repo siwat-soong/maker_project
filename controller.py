@@ -40,6 +40,10 @@ class Club:
         if isinstance(payment_method, PaymentMethod):
             self.__payment_method_list.append(payment_method)
 
+    def add_event(self, event):
+        if isinstance(event, Event):
+            self.__event_list.append(event)
+
     # Search Method
     def search_user_by_id(self, user_id):
         for user in self.__user_list:
@@ -81,9 +85,14 @@ def system_init():
         # Create Instance
         maker = Club("maker")
         jane = User("USE-001","Jane","0123456789")
-        jira = User("123", "Jira", "0123456789")
-        thana = Instructor("123", "Thana", "0123456789", Expertise.ADVANCE, 500)
+        jira = User("USE-002", "Jira", "0123456789")
+        thana = Instructor("INS-001", "Thana", "0123456789", Expertise.ADVANCE, 500)
+        amnach = Instructor("INS-002", "Amnach", "0123456789", Expertise.ADVANCE, 800)
+        tom = Admin("ADM-001", "Tom", "reception")
+        jerry = Admin("ADM002", "Jerry", "reception")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
+        desk_a = Space("DESK-001", SpaceType.HOT_DESK, 8, time(10, 0), time(22, 0))
+        room_a = Space("room-001", SpaceType.MEETING_ROOM, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
@@ -93,11 +102,17 @@ def system_init():
         cash_machine = Cash()
         qr_machine = QRCode()
 
+        event1 = Event("EV-001", "Ossiliscope", "Introduction", amnach, lab_a, 10, 100, Expertise.ADVANCE)
         # Add Instance
         maker.add_user(jane)
         maker.add_user(jira)
         maker.add_instructor(thana)
+        maker.add_instructor(amnach)
+        maker.add_admin(tom)
+        maker.add_admin(jerry)
         maker.add_resource(lab_a)
+        maker.add_resource(desk_a)
+        maker.add_resource(room_a)
         maker.add_resource(red_filament)
         maker.add_resource(printer_a)
         maker.add_resource(wooden_plank)
@@ -106,7 +121,8 @@ def system_init():
         maker.add_resource(tool_set_a)
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
-        
+
+        maker.add_event(event1)
         maker.add_member(jane.get_id)
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
