@@ -26,11 +26,10 @@ def startup_event():
     global maker
     maker = system_init()
 
-# ── /return — คืนหลายชิ้นพร้อมกัน ─────────────────────────────
 class ReturnRequest(BaseModel):
     user_id: str
     reservation_id: str
-    item_ids: List[str]  # รับหลาย item พร้อมกัน
+    item_ids: List[str]
 
 @app.post("/return")
 def return_resource_api(request: ReturnRequest):
@@ -51,12 +50,11 @@ def return_resource_api(request: ReturnRequest):
         }
     }
 
-# ── /pay — จ่ายหลาย invoice พร้อมกัน ──────────────────────────
 class PayRequest(BaseModel):
     user_id: str
-    invoice_ids: List[str]  # รับหลาย invoice พร้อมกัน
+    invoice_ids: List[str]
     amount: float
-    payment_method: str = "cash"  # "cash" หรือ "qr"
+    payment_method: str = "cash"
 
 @app.post("/pay")
 def pay_invoices_api(request: PayRequest):
@@ -64,7 +62,6 @@ def pay_invoices_api(request: PayRequest):
         if maker is None:
             raise HTTPException(status_code=500, detail="System not initialized")
 
-        # หา payment method
         selected_pm = None
         for pm in maker._Club__payment_method_list:
             if request.payment_method.lower() in pm.__class__.__name__.lower():
@@ -73,14 +70,13 @@ def pay_invoices_api(request: PayRequest):
         if not selected_pm:
             raise HTTPException(status_code=400, detail="payment_method ต้องเป็น 'cash' หรือ 'qr'")
 
-        # หา user
         target_user = next(
             (u for u in maker._Club__user_list if u._User__user_id == request.user_id), None
         )
         if not target_user:
             raise HTTPException(status_code=404, detail=f"User '{request.user_id}' not found")
 
-        result = target_user.pay_invoices(request.invoice_ids, request.amount, selected_pm)
+        result = target_user.pay_invoices(request.user_id, request.invoice_ids, request.amount, selected_pm)
 
         if result.get("status") == "failed":
             raise HTTPException(status_code=400, detail=result["message"])
@@ -98,7 +94,6 @@ def pay_invoices_api(request: PayRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
 
-# ── /debug — ดู invoices ของ user ─────────────────────────────
 @app.get("/debug/invoices/{user_id}")
 def debug_invoices(user_id: str):
     target_user = next(

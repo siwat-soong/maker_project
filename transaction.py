@@ -26,7 +26,7 @@ class Reservation:
         if isinstance(status, ReserveStatus):
             self.__status = status
         else:
-            self.__status = status  # fallback รับ str ได้ด้วย
+            self.__status = status
         print(f"Reservation {self.__reservation_id} status updated to: {status}")
 
     @property
@@ -42,12 +42,8 @@ class Reservation:
     def list_all_match_line_item(self, resource_id):
         res = list()
         try:
-            # ตรวจสอบชื่อตัวแปรให้ตรงกับใน __init__ (คือ __line_item_list)
             items = getattr(self, "_Reservation__line_item_list", [])
             for lit in items:
-                # ดักจุดที่มักจะขึ้น 'str' object is not callable
-                # .get_resource เป็น @property (ห้ามมีวงเล็บ)
-                # .get_id เป็น @property (ห้ามมีวงเล็บ)
                 if lit.get_resource.get_id == resource_id:
                     res.append(lit)
             return res
@@ -74,8 +70,8 @@ class Reservation:
             overdue_days = delta.days if delta.days > 0 else 1
 
         for item in self.__line_item_list:
-            if item.get_resource.get_id == item_id:   # @property — no ()
-                res = item.get_resource                 # @property — no ()
+            if item.get_resource.get_id == item_id: 
+                res = item.get_resource     
                 fee = res.calculate_fee(None, None, overdue_days)
                 total_fee += fee
                 res.update_status(ResourceStatus.AVAILABLE)
@@ -85,7 +81,7 @@ class Reservation:
     
     def check_item(self, item_id):
         for item in self.__line_item_list:
-            if item.get_resource.get_id == item_id:   # @property — no ()
+            if item.get_resource.get_id == item_id:
                 return item
         return None
     
@@ -107,8 +103,8 @@ class Invoice:
 
     def calculate_total_price(self):
         if self.__line_item_list is not None:
-            for line_item in self.__line_item_list:          # fixed typo __line_item_ -> __line_item_list
-                self.__price += line_item.calculate_fee(self.__user, line_item.get_amount, None)  # get_amount is @property
+            for line_item in self.__line_item_list:
+                self.__price += line_item.calculate_fee(self.__user, line_item.get_amount, None)
         if self.__event is not None:
             self.__price += self.__event.join_fee
         if self.__user.get_role == UserRole.GUEST:

@@ -84,7 +84,7 @@ class Club:
         if not target_reservation:
             return {"error": "Reservation not found"}
 
-        # ตรวจว่าทุก item มีอยู่จริงก่อน
+        # check item
         target_items = []
         for item_id in item_ids:
             item = target_reservation.check_item(item_id)
@@ -92,24 +92,22 @@ class Club:
                 return {"error": f"Item not found: {item_id}"}
             target_items.append((item_id, item))
 
-        # คืนทุกชิ้น รวม cost เป็น invoice เดียว
         total_cost = 0.0
         for item_id, _ in target_items:
             total_cost += target_reservation.return_items(item_id)
 
         invoice = Invoice(target_user, reservation=target_reservation, cost=total_cost)
 
-        # pop items ออกหลัง return ครบแล้ว
+        #pop item
         for _, item in target_items:
             target_reservation.pop_item(item)
 
-        # ถ้ายอด 0 — ออกใบเสร็จเลย
         if total_cost == 0:
             from payment_class import Cash
             invoice.mark_as_paid()
             from transaction import Receipt
             receipt = Receipt(target_user, Cash(), invoice)
-            target_user._User__receipt_list.append(receipt)
+            target_user.receipt_list.append(receipt)
             target_user.add_invoice(invoice)
             return {
                 "receipt_id": receipt.receipt_id,
@@ -169,10 +167,9 @@ def system_init():
         maker.add_event(event1)
         maker.add_member(jane.get_id)
 
-        # ── Seed Reservations (ID คงที่ ไม่เปลี่ยนทุก restart) ────────
+        # ── Butter Test ────────
         now = datetime.now()
 
-        # Jane ยืม 3D Printer และ Tool Set
         rsv_jane = Reservation(jane, now + timedelta(days=3), fixed_id="REV-JANE-001")
         li_printer = LineItem(printer_a, 1, now - timedelta(hours=2), now + timedelta(days=3))
         li_tool    = LineItem(tool_set_a, 1, now - timedelta(hours=2), now + timedelta(days=3))
@@ -180,13 +177,11 @@ def system_init():
         rsv_jane.add_line_item(li_tool)
         jane.add_reservation(rsv_jane)
 
-        # Jira ยืม Laser Cutter (overdue)
         rsv_jira = Reservation(jira, now - timedelta(days=1), fixed_id="REV-JIRA-001")
         li_laser = LineItem(laser_cutter_a, 1, now - timedelta(days=3), now - timedelta(days=1))
         rsv_jira.add_line_item(li_laser)
         jira.add_reservation(rsv_jira)
 
-        # Jane ยืมหลายชิ้น overdue 2 วัน (สำหรับ test คืนหลายอัน + จ่ายหลาย invoice)
         rsv_jane_overdue = Reservation(jane, now - timedelta(days=2), fixed_id="REV-JANE-OVD")
         li_printer_ovd = LineItem(printer_a, 1, now - timedelta(days=5), now - timedelta(days=2))
         li_tool_ovd    = LineItem(tool_set_a, 1, now - timedelta(days=5), now - timedelta(days=2))
@@ -194,7 +189,6 @@ def system_init():
         rsv_jane_overdue.add_line_item(li_tool_ovd)
         jane.add_reservation(rsv_jane_overdue)
 
-        # Jira ยืม Laser Cutter อีกชุด overdue 3 วัน
         rsv_jira2 = Reservation(jira, now - timedelta(days=3), fixed_id="REV-JIRA-002")
         li_laser2 = LineItem(laser_cutter_a, 1, now - timedelta(days=6), now - timedelta(days=3))
         rsv_jira2.add_line_item(li_laser2)

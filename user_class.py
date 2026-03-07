@@ -123,12 +123,13 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_invoices(self, invoice_ids: list, amount: float, payment_method=None):
-        """จ่ายหลาย invoice พร้อมกัน — amount ต้องครอบคลุม total ของทุก invoice"""
+    def pay_invoice(self, user_id: str, invoice_ids: list, amount: float, payment_method=None):
         from transaction import Invoice, Receipt
         from payment_class import Cash
 
-        # หา invoice ทุกตัว
+        if user_id != self.__user_id:
+            return {"status": "failed", "message": f"User '{user_id}' is not authorized to pay these invoices"}
+
         target_invoices = []
         for invoice_id in invoice_ids:
             found = None
@@ -144,7 +145,6 @@ class User:
 
         total_required = sum(inv.get_cost() for inv in target_invoices)
 
-        # ถ้ายอดรวม 0 ออกใบเสร็จเลย
         if total_required == 0:
             receipts = []
             for inv in target_invoices:
@@ -175,17 +175,6 @@ class User:
             return {"status": "success", "receipt_ids": receipts, "total": total_required}
 
         return {"status": "failed", "message": "Payment processing failed"}
-
-    def pay_invoice(self, invoice_id: str, amount: float, payment_method=None):
-        """จ่าย invoice เดียว — wrapper ของ pay_invoices"""
-        result = self.pay_invoices([invoice_id], amount, payment_method)
-        if result["status"] == "success":
-            from transaction import Receipt
-            # return receipt object เดิมเพื่อ backward compatibility
-            for r in self.__receipt_list:
-                if r.receipt_id in result["receipt_ids"]:
-                    return r
-        return result
 
     def reserve(self):
         pass
