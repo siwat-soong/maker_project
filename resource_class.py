@@ -10,14 +10,14 @@ class Resource(ABC):
     @property
     def get_id(self):
         return self.__resource_id
-    
-    def update_status(self, status):
-        if isinstance(status, ResourceStatus):
-            self.__status = status
-    
+        
     def check_status(self, status):
         if isinstance(status, ResourceStatus) and status == self.__status: return True
         else: return False
+    
+    @abstractmethod
+    def update_status(self, status,amount):
+        pass
     
     @abstractmethod
     def calculate_fee(self, user, amount, duration):
@@ -46,7 +46,9 @@ class Space(Resource):
             else: raise Exception()
         except: raise ValueError("Capacity must be positive integer")
 
-    
+    def update_status(self, status,amount):
+        if isinstance(status, ResourceStatus):
+            self.__status = status
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
         pass
@@ -70,6 +72,9 @@ class Equipment(Resource):
         return self.__eq_type
     
     # Abstract Method
+    def update_status(self, status,amount):
+        if isinstance(status, ResourceStatus):
+            self.__status = status
     def calculate_fee(self, user, amount, duration):
         pass
     
@@ -148,6 +153,12 @@ class Material(Resource):
         return self.__supported_machine
 
     # Abstract Method
+    def update_status(self, status,amount):
+        self.deduct(amount)
+        if( self.__stock_qty <= self.__minimum_stock):
+            return "Stock Out Minimum"
+        return "Update Resource Complete"
+
     def calculate_fee(self, user, amount, duration):
         pass
     

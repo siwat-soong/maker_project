@@ -5,6 +5,7 @@ from resource_class import *
 from payment_class import *
 from event_class import *
 from transaction import *
+from datetime import time
 class Club:
     def __init__(self, name):
         self.__name = name
@@ -16,6 +17,9 @@ class Club:
         self.__material_list = []
         self.__payment_method_list = []
         self.__event_list = []
+        self.__notification_list =[]
+        self.__purchase_list =[]
+        self.__booking_list = []
     
     # Add Method
     def add_user(self, user):
@@ -29,7 +33,7 @@ class Club:
     def add_admin(self, admin):
         if isinstance(admin, Admin):
             self.__admin_list.append(admin)
-    
+
     def add_resource(self, resource):
         if isinstance(resource, Space): self.__space_list.append(resource)
         elif isinstance(resource, Equipment): self.__equipment_list.append(resource)
@@ -42,7 +46,17 @@ class Club:
     def add_event(self, event):
         if isinstance(event, Event):
             self.__event_list.append(event)
-            
+
+    def add_notification(self,notification):
+        if isinstance(notification, Notification):
+            self.__notification_list.append(notification) 
+
+    def add_purchase_list(self,line_item):
+        self.__purchase_list.append(line_item)
+
+    def add_booking_list(self,line_item):
+        self.__booking_list.append(line_item)
+    
     # Search Method
     def search_user_by_id(self, user_id):
         for user in self.__user_list:
@@ -64,6 +78,37 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    def reserve(self, user_id: str):
+        self.__user = self.search_user_by_id(user_id)
+        if self.__user ==  None:
+            return "Not have this user in this Club" 
+
+        self.__cart = self.__user.get_cart
+        if self.__cart == []:
+            return "Error: Cart is empty"
+        else:
+            self.__booking_list = []
+            self.__purchase_list = []
+
+        for line_item in self.__cart:
+            self.__item = line_item.get_resource
+            self.__amount = line_item.get_amount
+            if self.__item.update_status(ResourceStatus.RESERVED,self.__amount) != "Update Resource Complete" :
+                self.__notification = Notification(self,"Stock Out Minimum",line_item)
+                self.add_notification(self.__notification)
+            else :    
+                if isinstance(self.__item,Material):
+                    self.add_purchase_list(line_item)
+                else :
+                    self.add_booking_list(line_item)
+        if self.__purchase_list != []:
+            self.__user.create_invoice(self.__user,InvoiceStatus.PENDING,line_item_list=self.__purchase_list)
+        self.__user.create_reservation(self.__user,self.__booking_list)
+        self.__user.clear_cart()
+        self.__booking_list=[]
+        self.__purchase_list = []
+        self.__user.create_notification(self.__user,"Booking Complete",datetime.now)
+        return "Transaction Complete"
 
 
 # Init Function
@@ -79,7 +124,7 @@ def system_init():
         jerry = Admin("ADM002", "Jerry", "reception")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         desk_a = Space("DESK-001", SpaceType.HOT_DESK, 8, time(10, 0), time(22, 0))
-        room_a = Space("room-001", SpaceType.MEETING_ROOM, time(10, 0), time(22, 0))
+        room_a = Space("ROOM-001", SpaceType.MEETING_ROOM, 50, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
@@ -110,7 +155,7 @@ def system_init():
         maker.add_payment_method(qr_machine)
 
         maker.add_event(event1)
-        maker.add_member(jane.get_id)
+        
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")

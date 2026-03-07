@@ -36,6 +36,8 @@ class EventStatus(Enum):
 class ReserveStatus(Enum):
     CONFIRMED = "CONFIRMED"
     CHECKED_IN = "CHECKED_IN"
-    PENDING = "PENDING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+class InvoiceStatus(Enum):
+    PENDING = "PENDING"
+    COMPLETE = "COMPLETE"

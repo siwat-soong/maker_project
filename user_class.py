@@ -2,6 +2,8 @@ from datetime import datetime
 from enum_class import UserRole, Expertise
 from event_class import *
 from enum_class import *
+from transaction import *
+import uuid
 
 # User & sub class
 class User:
@@ -18,11 +20,12 @@ class User:
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
-
+        self.__cart = []
+        self.__invoice_list = []
 
     # Print Method
     def __repr__(self):
-        return f"👤 User:\nID = {self.__user_id}\nNAME = {self.__name}\nTEL = {self.__tel}\n"
+        return f"👤 User:\nID = {self.__user_id}\nNAME = {self.__name}\nSTATUS = {self.__role}\nTEL = {self.__tel}\n"
     
     # Input Validation
     def __validate_input_name(self, name):
@@ -57,10 +60,11 @@ class User:
         if self.__role == UserRole.ANNUALMEMBER:
             return 14
         else : return 1
-    def __repr__(self):
-        if self.__role == UserRole.ANNUALMEMBER:
-            return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
-        else : return f"User not is Member"
+
+    @property
+    def get_cart(self):
+        return self.__cart
+    
     def update_status(self, status):
             if isinstance(status, UserRole.ANNUALMEMBER):
                 self.__member_status = status
@@ -68,7 +72,20 @@ class User:
                 self.__registry_date = current_date
                 self.__expired_date = current_date.replace(year=current_date.year + 1)
                 self.__monthly_quota = 120 # minutes
-    
+
+    def create_invoice(self,user,status, line_item_list = None, event = None ):
+        self.__invoice_id = str(uuid.uuid4())[:8]
+        self.__invoice = Invoice(user,self.__invoice_id,status,line_item_list=line_item_list)
+        self.add_invoice_list(self.__invoice)
+
+    def create_reservation(self,user,line_item_list):
+        self.__reservation = Reservation(user,line_item_list)
+        self.add_reservation_list(self.__reservation)
+
+    def create_notification(self,user,topic,detail):
+        self.__notification = Notification(user,topic,detail)
+        self.notify(self.__notification)
+        
     def notify(self, notification):
         from transaction import Notification
         if isinstance(notification, Notification):
@@ -84,6 +101,15 @@ class User:
 
     def add_item_list(self, line_item):
         pass
+
+    def add_invoice_list(self,invoice):
+        if isinstance(invoice, Invoice):
+            self.__invoice_list.append(invoice)
+
+    def add_reservation_list(self,reservation):
+        if isinstance(reservation, Reservation):
+            self.__reservation_list.append(reservation)
+
 
     def add_certificate(self, certificate):
         if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
@@ -127,7 +153,9 @@ class User:
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
-    
+
+    def clear_cart(self):
+        self.__cart = []
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):

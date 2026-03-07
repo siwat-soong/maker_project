@@ -1,6 +1,6 @@
 from enum_class import ReserveStatus
 from datetime import datetime
-from resource import *
+from resource_class import *
 from enum_class import *
 from event_class import *
 from user_class import *
@@ -60,12 +60,12 @@ class Invoice:
         self.__price = 0
     def calculate_total_price(self):
         if self.__line_item_list != None:
-            for line_item in self.__line_item_:
+            for line_item in self.__line_item_list:
                 self.__price+=line_item.calculate_fee(self.__user,line_item.get_amount,None)
         if self.__event != None:
             self.__price+=self.__event.join_fee
         if self.__user.get_role == UserRole.GUEST:
-                self.__price += User.MEMBER_FEE
+                self.__price += self.__user.MEMBER_FEE
     @property
     def user(self):
         return self.__user
@@ -75,8 +75,6 @@ class Invoice:
     @property
     def detail(self):
         pass
-    
-        
         
 class Receipt:
     def __init__(self, purchased_user, payment_method, invoice):
@@ -141,12 +139,6 @@ class LineItem:
 
 class Notification:
     def __init__(self, target, topic, detail):
-        from user_class import User
-        self.__target = self.__validate_input_specific_type(target, User)
+        self.__target = target
         self.__topic = topic
         self.__detail = detail
-    
-    # Input Validation
-    def __validate_input_specific_type(self, obj, obj_type):
-        if isinstance(obj, obj_type): return obj
-        else: raise TypeError("Wrong Type")
