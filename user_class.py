@@ -73,7 +73,7 @@ class User:
     def add_receipt(self, receipt):
         from transaction import Receipt
         if isinstance(receipt, Receipt):
-            self.__notification_list.append(receipt)
+            self.__receipt_list.append(receipt)
 
     def add_item_list(self, line_item):
         pass
@@ -112,14 +112,56 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_receipt(self, invoice_id, amount):
-        pass
+    def pay_receipt(self, receipt_id, amount):
+        print(f"API Request Receipt ID: '{receipt_id}'")
+        
+        target_receipt = None
+        for receipt in self.__receipt_list:
+            print(f"Found in list: '{receipt.get_id()}'")
+            if receipt.get_id() == receipt_id:
+                target_receipt = receipt
+                break
+                
+        if not target_receipt:
+            return {"status": "failed", "message": "receipt not found"}
+            
+        if target_receipt.is_purchased():
+            return {"status": "failed", "message": "This receipt is already paid"}
+
+        payment_method = target_receipt.get_payment_method()
+        required_cost = target_receipt.get_cost()
+        
+        is_valid = payment_method.validate(amount, required_cost)
+        
+        if is_valid:
+            payment_success = payment_method.process_payment(amount)
+            
+            if payment_success:
+                target_receipt.mark_as_paid()
+                
+                reservation = target_receipt.get_reservation()
+                if reservation:
+                    reservation.update_status("COMPLETED")
+                
+                self.__unpaid_balance -= required_cost
+                if self.__unpaid_balance < 0: 
+                    self.__unpaid_balance = 0 # กันติดลบ
+                    
+                return {"status": "success", "message": "Payment successful"}
+        else:
+            return {"status": "failed", "message": "Payment validation failed or insufficient amount"}
 
     def reserve(self):
         pass
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+
+    def search_reservation_by_id(self, reservation_id: str):
+        for reservation in self.reservation_list:
+            if reservation.reservation_id == reservation_id:
+                return reservation
+        return None
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):

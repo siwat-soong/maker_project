@@ -5,11 +5,12 @@ import uuid
 class Reservation:
     ID_COUNTER = 1
     
-    def __init__(self, owner, item_list):
-        self.__rsv_id = f"REV-{str(uuid.uuid4().int)[:10]}"
+    def __init__(self, owner, due_date):
+        self.__reservation_id = f"REV-{str(uuid.uuid4().int)[:10]}"
         self.__owner = self.__validate_input_owner(owner)
-        self.__item_list = item_list
+        self.__due_date = due_date
         self.__status = ReserveStatus.CONFIRMED
+        self.__line_item_list = []
     
     # Input Validation
     def __validate_input_owner(self, owner):
@@ -41,18 +42,46 @@ class Reservation:
     def calculate_fine(self):
         pass
     
-    def return_items(self, return_date):
-        pass
+    def add_line_item(self, item: LineItem):
+        self.__line_item_list.append(item)
 
-    def check_late_return(self):
-        pass
+    def return_items(self, item_id: str) -> float:
+        total_fee = 0.0
+        current_time = datetime.now()
+        
+        overdue_days = 0
+        if current_time > self.__due_date:
+            delta = current_time - self.__due_date
+            overdue_days = delta.days if delta.days > 0 else 1
+
+        for item in self.__line_item_list:
+            if item.get_resource().get_id() == item_id:
+                res = item_id.get_resource()
+                fee = res.calculate_fee(overdue_days)
+                total_fee += fee
+                res.update_status("AVAILABLE")
+            
+        self.__status = "COMPLETED"
+        return total_fee
+    
+    def check_item(self, item_id):
+        for item in self.__line_item_list:
+            if item.get_resource().get_id() == item_id:
+                return item
+    
+    def pop_item(self, item):
+        self.__line_item_list.remove(item)
+
+    def update_status(self, new_status: str):
+        self.__status = new_status
+        print(f"Reservation {self.__reservation_id} status updated to: {new_status}")
 
 class Receipt:
     def __init__(self, purchased_user, payment_method, event, rsv, cost):
         from event_class import Event
         from user_class import User
         from payment_class import PaymentMethod
-        self.__inv_id = f"INV-{str(uuid.uuid4().int)[:10]}"
+        self.__receipt_id = f"R-{str(uuid.uuid4().int)[:10]}"
         self.__purchased_user = self.__validate_input_specific_type(purchased_user, User)
         self.__payment_method = self.__validate_input_specific_type(payment_method, PaymentMethod)
         self.__event = self.__validate_input_specific_type(event, Event, True)
@@ -77,6 +106,18 @@ class Receipt:
 
     def mark_as_paid(self):
         self.__is_purchased = True
+
+    def get_id(self):
+        return self.__receipt_id
+    
+    def get_payment_method(self):
+        return self.__payment_method
+        
+    def get_cost(self):
+        return self.__cost
+        
+    def get_reservation(self):
+        return self.__rsv
 
 class LineItem:
     def __init__(self, resource, amount, start_date_time, end_date_time):

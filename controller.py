@@ -61,6 +61,30 @@ class Club:
             if mat.get_id == resource_id: return mat
         return None
 
+    def get_user_list(self):
+        return self.__user_list
+        
+    def get_resource_list(self):
+        return self.__resource_list
+
+    def process_return(self, user_id: str, reservation_id: str, item_id: str):
+        target_user = next((u for u in self.user_list if u.get_id == user_id), None)
+        if not target_user:
+            return {"error": "User not found"}
+
+        target_reservation = target_user.search_reservation_by_id(reservation_id)
+        if not target_reservation:
+            return {"error": "Reservation not found"}
+        
+        target_list = target_user.search_reservation_by_id(reservation_id).checck_item(item_id)
+        if not target_list:
+            return {"error": "Item not found"}
+
+        total_cost = target_reservation.return_items(item_id)
+        invoice_info = target_user.add_invoice(total_cost, target_reservation)
+        target_pop = target_user.search_reservation_by_id(reservation_id).pop_item(target_list)
+        return invoice_info
+
 
 # Init Function
 def system_init():
@@ -95,8 +119,28 @@ def system_init():
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
+        # -----------------------------------------
+        # 🛠️ MOCK DATA FOR PAYMENT TESTING
+        # -----------------------------------------
+        from transaction import Reservation, Receipt
+        from datetime import datetime
 
+        # 1. จำลองการสร้าง Reservation ของ Jira
+        mock_rsv = Reservation(owner=jira, due_date=datetime.now())
+        
+        # 2. จำลองการสร้างใบเสร็จ (Receipt)
+        mock_receipt = Receipt(purchased_user=jira, payment_method=cash_machine, event=None, rsv=mock_rsv, cost=500.0)
+        
+        # 🚨 บังคับเปลี่ยนเลข ID เป็นค่าคงที่เพื่อใช้ทดสอบ!
+        mock_receipt._Receipt__receipt_id = "002"  # 👈 เพิ่มบรรทัดนี้เข้าไป
+        
+        # 3. ยัดใบเสร็จเข้า List ของ User
+        jira.add_receipt(mock_receipt) 
+
+        print(f"💰 [Mock Data] Receipt ID for testing: {mock_receipt.get_id()}")
+        # -----------------------------------------
         return maker
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
+

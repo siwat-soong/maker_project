@@ -59,6 +59,7 @@ class Equipment(Resource):
         super().__init__(resource_id)
         self.__required_cert = self.__validate_input_specific_type(required_cert, Expertise)
         self.__eq_type = self.__validate_input_specific_type(eq_type, EquipmentType)
+        self.__daily_fine = 100
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
@@ -71,7 +72,9 @@ class Equipment(Resource):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        if duration > 0:
+            return duration * self.__daily_fine
+        return 0.0
     
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
         pass
