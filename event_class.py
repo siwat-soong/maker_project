@@ -36,6 +36,9 @@ class Event:
     
     def check_availability(self):
         return self.__status == EventStatus.OPEN
+    @property
+    def join_fee(self):
+        return self.__join_fee
     
     def join(self, user):
         if len(self.__attenders) + 1 <= self.__max_attender:

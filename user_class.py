@@ -5,6 +5,7 @@ from enum_class import *
 
 # User & sub class
 class User:
+    MEMBER_FEE = 100
     def __init__(self, user_id, name, tel):
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
@@ -13,10 +14,12 @@ class User:
         self.__certificate_list = []
         self.__notification_list = []
         self.__reservation_list = []
+        self.__invoice_list = []
         self.__receipt_list = []
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
+
 
     # Print Method
     def __repr__(self):
@@ -45,6 +48,11 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
+    
+    @property
+    def get_role(self):
+        return self.__role
+    
     @property
     def get_max_reserve_days(self):
         if self.__role == UserRole.ANNUALMEMBER:
@@ -55,12 +63,12 @@ class User:
             return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
         else : return f"User not is Member"
     def update_status(self, status):
-            if isinstance(status, UserRole.ANNUALMEMBER):
-                self.__member_status = status
-                current_date = datetime.now()
-                self.__registry_date = current_date
-                self.__expired_date = current_date.replace(year=current_date.year + 1)
-                self.__monthly_quota = 120 # minutes
+        if status == UserRole.ANNUALMEMBER:
+            self.__role = status
+            current_date = datetime.now()
+            self.__registry_date = current_date
+            self.__expired_date = current_date.replace(year=current_date.year + 1)
+            self.__monthly_quota = 120  # minutes
     
     def notify(self, notification):
         from transaction import Notification
@@ -70,10 +78,13 @@ class User:
     def join_event(self, event_id):
         pass
 
-    def add_receipt(self, receipt):
-        from transaction import Receipt
-        if isinstance(receipt, Receipt):
-            self.__receipt_list.append(receipt)
+    def add_invoice(self, invoice):
+        from transaction import Invoice
+        if isinstance(invoice, Invoice):
+            self.__invoice_list.append(invoice)
+            return {"invoice_id": invoice.get_id, "cost": invoice.get_cost(), "payment_status": "PAID" if invoice.is_purchased() else "UNPAID", "message": "Invoice added"}
+        else:
+            raise TypeError("Please add Invoice only")
 
     def add_item_list(self, line_item):
         pass
@@ -112,54 +123,85 @@ class User:
     def check_out(self, reservation_id, space_id):
         pass
 
-    def pay_receipt(self, receipt_id, amount):
-        print(f"API Request Receipt ID: '{receipt_id}'")
-        
-        target_receipt = None
-        for receipt in self.__receipt_list:
-            print(f"Found in list: '{receipt.get_id()}'")
-            if receipt.get_id() == receipt_id:
-                target_receipt = receipt
-                break
-                
-        if not target_receipt:
-            return {"status": "failed", "message": "receipt not found"}
-            
-        if target_receipt.is_purchased():
-            return {"status": "failed", "message": "This receipt is already paid"}
+    def pay_invoices(self, invoice_ids: list, amount: float, payment_method=None):
+        """จ่ายหลาย invoice พร้อมกัน — amount ต้องครอบคลุม total ของทุก invoice"""
+        from transaction import Invoice, Receipt
+        from payment_class import Cash
 
-        payment_method = target_receipt.get_payment_method()
-        required_cost = target_receipt.get_cost()
-        
-        is_valid = payment_method.validate(amount, required_cost)
-        
-        if is_valid:
-            payment_success = payment_method.process_payment(amount)
-            
-            if payment_success:
-                target_receipt.mark_as_paid()
-                
-                reservation = target_receipt.get_reservation()
+        # หา invoice ทุกตัว
+        target_invoices = []
+        for invoice_id in invoice_ids:
+            found = None
+            for inv in self.__invoice_list:
+                if inv.get_id == invoice_id:
+                    found = inv
+                    break
+            if not found:
+                return {"status": "failed", "message": f"Invoice not found: {invoice_id}"}
+            if found.is_purchased():
+                return {"status": "failed", "message": f"Invoice already paid: {invoice_id}"}
+            target_invoices.append(found)
+
+        total_required = sum(inv.get_cost() for inv in target_invoices)
+
+        # ถ้ายอดรวม 0 ออกใบเสร็จเลย
+        if total_required == 0:
+            receipts = []
+            for inv in target_invoices:
+                inv.mark_as_paid()
+                r = Receipt(inv.user, Cash(), inv)
+                self.__receipt_list.append(r)
+                receipts.append(r.receipt_id)
+            return {"status": "success", "receipt_ids": receipts, "total": 0.0}
+
+        pm = payment_method
+        if pm is None:
+            return {"status": "failed", "message": "No payment method provided"}
+
+        if not pm.validate(amount, total_required):
+            return {"status": "failed", "message": f"Insufficient amount. Required: {total_required}, Got: {amount}"}
+
+        if pm.process_payment(amount):
+            receipts = []
+            for inv in target_invoices:
+                inv.mark_as_paid()
+                reservation = inv.get_reservation()
                 if reservation:
                     reservation.update_status("COMPLETED")
-                
-                self.__unpaid_balance -= required_cost
-                if self.__unpaid_balance < 0: 
-                    self.__unpaid_balance = 0 # กันติดลบ
-                    
-                return {"status": "success", "message": "Payment successful"}
-        else:
-            return {"status": "failed", "message": "Payment validation failed or insufficient amount"}
+                r = Receipt(inv.user, pm, inv)
+                self.__receipt_list.append(r)
+                receipts.append(r.receipt_id)
+            self.__unpaid_balance = max(0, self.__unpaid_balance - total_required)
+            return {"status": "success", "receipt_ids": receipts, "total": total_required}
+
+        return {"status": "failed", "message": "Payment processing failed"}
+
+    def pay_invoice(self, invoice_id: str, amount: float, payment_method=None):
+        """จ่าย invoice เดียว — wrapper ของ pay_invoices"""
+        result = self.pay_invoices([invoice_id], amount, payment_method)
+        if result["status"] == "success":
+            from transaction import Receipt
+            # return receipt object เดิมเพื่อ backward compatibility
+            for r in self.__receipt_list:
+                if r.receipt_id in result["receipt_ids"]:
+                    return r
+        return result
 
     def reserve(self):
         pass
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+    
+
+    def add_reservation(self, reservation):
+        from transaction import Reservation
+        if isinstance(reservation, Reservation):
+            self.__reservation_list.append(reservation)
 
     def search_reservation_by_id(self, reservation_id: str):
-        for reservation in self.reservation_list:
-            if reservation.reservation_id == reservation_id:
+        for reservation in self.__reservation_list:
+            if reservation.get_reservation_id == reservation_id:
                 return reservation
         return None
 

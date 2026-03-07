@@ -93,7 +93,7 @@ class ThreeDPrinter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        return super().calculate_fee(user, amount, duration)
 
 class LaserCutter(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, work_area_size, current_material):
@@ -109,7 +109,7 @@ class LaserCutter(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        return super().calculate_fee(user, amount, duration)
 
 class ToolSet(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, tool_count):
@@ -125,7 +125,7 @@ class ToolSet(Equipment):
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        return super().calculate_fee(user, amount, duration)
 
 class Material(Resource):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine):
