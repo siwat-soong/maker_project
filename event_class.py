@@ -5,6 +5,7 @@ from datetime import datetime
 class Event:
     def __init__(self, event_id, event_topic, event_detail, instructor, space, max_attender, join_fee, certified_topic):
         from user_class import Instructor
+        self.__event_topic = event_topic
         self.__event_id = event_id
         self.__event_detail = event_detail
         self.__instructor = self.__validate_input_specific_type(instructor, Instructor)
@@ -55,6 +56,8 @@ class Event:
                 self.__attenders.remove(attender)
                 if len(self.__attenders) < self.__max_attender:
                     self.__status = EventStatus.OPEN
+    def show_detail(self):
+        return f"{self.__event_id} : {self.__event_topic}\nDetail : {self.__event_detail}\nInstructor : {self.__instructor}\nSpace : {self.__space.get_id}\nJoin Fee : {self.__join_fee}"
     
 
 class Certificate:
