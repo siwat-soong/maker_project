@@ -68,6 +68,12 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    
+    def search_payment_method_by_name(self, payment_method):
+        for pm in self.__payment_method_list:
+            if payment_method.lower() in pm.__class__.__name__.lower():
+                return pm
+        return None
 
     def get_user_list(self):
         return self.__user_list
@@ -76,20 +82,19 @@ class Club:
         return self.__space_list + self.__equipment_list + self.__material_list
 
     def process_return(self, user_id: str, reservation_id: str, item_ids: list):
-        target_user = next((u for u in self.__user_list if u.get_id == user_id), None)
+        target_user = self.search_user_by_id(user_id)
         if not target_user:
-            return {"error": "User not found"}
+            return "⚠️ User not found"
 
         target_reservation = target_user.search_reservation_by_id(reservation_id)
         if not target_reservation:
-            return {"error": "Reservation not found"}
+            return "⚠️ Reservation not found"
 
-        # check item
         target_items = []
         for item_id in item_ids:
             item = target_reservation.check_item(item_id)
             if not item:
-                return {"error": f"Item not found: {item_id}"}
+                return f"⚠️ Item not found: {item_id}"
             target_items.append((item_id, item))
 
         total_cost = 0.0
@@ -98,28 +103,30 @@ class Club:
 
         invoice = Invoice(target_user, reservation=target_reservation, cost=total_cost)
 
-        #pop item
         for _, item in target_items:
             target_reservation.pop_item(item)
 
         if total_cost == 0:
             from payment_class import Cash
-            invoice.mark_as_paid()
             from transaction import Receipt
+            invoice.mark_as_paid()
             receipt = Receipt(target_user, Cash(), invoice)
-            target_user.receipt_list.append(receipt)
             target_user.add_invoice(invoice)
+            target_user.add_receipt(receipt)
             return {
                 "receipt_id": receipt.receipt_id,
-                "cost": 0.0,
-                "payment_status": "PAID",
-                "message": f"Auto-paid (no charge) — {len(target_items)} item(s) returned"
+                "returned_items": [i for i, _ in target_items],
+                "cost": total_cost,
+                "payment_status": "PAID"
             }
-
-        invoice_info = target_user.add_invoice(invoice)
-        invoice_info["returned_items"] = [i for i, _ in target_items]
-        return invoice_info
-
+        else:
+            target_user.add_invoice(invoice)
+            return {
+                "invoice_id": invoice.get_id,
+                "returned_items": [i for i, _ in target_items],
+                "cost": total_cost,
+                "payment_status": "UNPAID"
+            }
 
 # Init Function
 def system_init():
