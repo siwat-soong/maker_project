@@ -82,9 +82,17 @@ class User:
         from transaction import Invoice
         if isinstance(invoice, Invoice):
             self.__invoice_list.append(invoice)
-            return {"invoice_id": invoice.get_id, "cost": invoice.get_cost(), "payment_status": "PAID" if invoice.is_purchased() else "UNPAID", "message": "Invoice added"}
+            return "✅ Add Invoice Success"
         else:
-            raise TypeError("Please add Invoice only")
+            return "⚠️ failed to add Invoice"
+
+    def add_receipt(self, receipt):
+        from transaction import Receipt
+        if isinstance(receipt, Receipt):
+            self.__receipt_list.append(receipt)
+            return "✅ Add Receipt Success"
+        else:
+            return "⚠️ failed to add Receipt"
 
     def add_item_list(self, line_item):
         pass
@@ -128,7 +136,7 @@ class User:
         from payment_class import Cash
 
         if user_id != self.__user_id:
-            return {"status": "failed", "message": f"User '{user_id}' is not authorized to pay these invoices"}
+            return "⚠️ User can't pay this Invoice"
 
         target_invoices = []
         for invoice_id in invoice_ids:
@@ -138,28 +146,26 @@ class User:
                     found = inv
                     break
             if not found:
-                return {"status": "failed", "message": f"Invoice not found: {invoice_id}"}
+                return f"⚠️ Invoice not found: {invoice_id}"
             if found.is_purchased():
-                return {"status": "failed", "message": f"Invoice already paid: {invoice_id}"}
+                return f"⚠️ already paid: {invoice_id}"
             target_invoices.append(found)
 
         total_required = sum(inv.get_cost() for inv in target_invoices)
 
         if total_required == 0:
-            receipts = []
             for inv in target_invoices:
                 inv.mark_as_paid()
                 r = Receipt(inv.user, Cash(), inv)
                 self.__receipt_list.append(r)
-                receipts.append(r.receipt_id)
-            return {"status": "success", "receipt_ids": receipts, "total": 0.0}
+            return "✅ Pay Invoice Success"
 
         pm = payment_method
         if pm is None:
-            return {"status": "failed", "message": "No payment method provided"}
+            return "⚠️ No Payment Method"
 
         if not pm.validate(amount, total_required):
-            return {"status": "failed", "message": f"Insufficient amount. Required: {total_required}, Got: {amount}"}
+            return f"⚠️ Not enough money: {total_required} pay: {amount}"
 
         if pm.process_payment(amount):
             receipts = []
@@ -170,11 +176,15 @@ class User:
                     reservation.update_status("COMPLETED")
                 r = Receipt(inv.user, pm, inv)
                 self.__receipt_list.append(r)
-                receipts.append(r.receipt_id)
+                receipts.append({
+                    "receipt_id": r.receipt_id,
+                    "invoice_id": inv.get_id,
+                    "cost": inv.get_cost(),
+                    "payment_status": "PAID"
+                })
             self.__unpaid_balance = max(0, self.__unpaid_balance - total_required)
-            return {"status": "success", "receipt_ids": receipts, "total": total_required}
-
-        return {"status": "failed", "message": "Payment processing failed"}
+            return receipts
+        return "❌ Payment Processing Failed"
 
     def reserve(self):
         pass
