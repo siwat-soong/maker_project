@@ -78,37 +78,20 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
-    def reserve(self, user_id: str):
-        self.__user = self.search_user_by_id(user_id)
-        if self.__user ==  None:
-            return "Not have this user in this Club" 
+    
+    def request_show_available_event(self):
+        available_event = [] 
+        for event in self.__event_list: 
+            status = event.get_status 
+            
+            if status == EventStatus.OPEN: 
+                
+                detail = event.show_detail() 
+                
+                available_event.append(detail) 
+          
+        return available_event
 
-        self.__cart = self.__user.get_cart
-        if self.__cart == []:
-            return "Error: Cart is empty"
-        else:
-            self.__booking_list = []
-            self.__purchase_list = []
-
-        for line_item in self.__cart:
-            self.__item = line_item.get_resource
-            self.__amount = line_item.get_amount
-            if self.__item.update_status(ResourceStatus.RESERVED,self.__amount) != "Update Resource Complete" :
-                self.__notification = Notification(self,"Stock Out Minimum",line_item)
-                self.add_notification(self.__notification)
-            else :    
-                if isinstance(self.__item,Material):
-                    self.add_purchase_list(line_item)
-                else :
-                    self.add_booking_list(line_item)
-        if self.__purchase_list != []:
-            self.__user.create_invoice(self.__user,InvoiceStatus.PENDING,line_item_list=self.__purchase_list)
-        self.__user.create_reservation(self.__user,self.__booking_list)
-        self.__user.clear_cart()
-        self.__booking_list=[]
-        self.__purchase_list = []
-        self.__user.create_notification(self.__user,"Booking Complete",datetime.now)
-        return "Transaction Complete"
 
 
 # Init Function

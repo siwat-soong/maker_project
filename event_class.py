@@ -37,9 +37,14 @@ class Event:
     
     def check_availability(self):
         return self.__status == EventStatus.OPEN
+    #property
     @property
     def join_fee(self):
         return self.__join_fee
+    
+    @property
+    def get_status(self):
+        return self.__status
     
     def join(self, user):
         if len(self.__attenders) + 1 <= self.__max_attender:
@@ -56,9 +61,24 @@ class Event:
                 self.__attenders.remove(attender)
                 if len(self.__attenders) < self.__max_attender:
                     self.__status = EventStatus.OPEN
+
     def show_detail(self):
-        return f"{self.__event_id} : {self.__event_topic}\nDetail : {self.__event_detail}\nInstructor : {self.__instructor}\nSpace : {self.__space.get_id}\nJoin Fee : {self.__join_fee}"
-    
+        return {
+            "event_id": self.__event_id,
+            "status": self.__status.value if hasattr(self.__status, 'value') else self.__status,
+            "event_topic": self.__event_topic,
+            "event_detail": self.__event_detail,
+            
+            
+            "instructor": self.__instructor.get_id if hasattr(self.__instructor, 'get_id') else str(self.__instructor),
+            "location": self.__space.get_id if hasattr(self.__space, 'get_id') else str(self.__space),
+            
+           
+            "attenders_status": f"{len(self.__attenders)}/{self.__max_attender}",
+            
+            "join_fee": self.__join_fee,
+            "certified_topic": self.__certified_topic.value if hasattr(self.__certified_topic, 'value') else self.__certified_topic
+        }
 
 class Certificate:
     def __init__(self, owner, event, certified_topic, certified_date, expired_date=None):
