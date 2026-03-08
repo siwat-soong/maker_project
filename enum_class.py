@@ -3,6 +3,7 @@ from enum import Enum
 class UserRole(Enum):
     ANNUALMEMBER = "Annual Member"
     GUEST = "GUEST"
+    ADMIN = "Admin"
 
 class Expertise(Enum):
     BASIC = "BASIC"

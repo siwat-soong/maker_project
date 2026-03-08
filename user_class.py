@@ -20,6 +20,7 @@ class User:
         self.__unpaid_balance = 0
         self.__is_blacklist = False
 
+
     # Print Method
     def __repr__(self):
         return f"👤 User:\nID = {self.__user_id}\nNAME = {self.__name}\nTEL = {self.__tel}\n"
@@ -106,24 +107,41 @@ class User:
     def list_reserve_history(self):
         result = []
         for rsv in self.__reservation_list:
+            item_ids = [item.get_resource.get_id for item in rsv._Reservation__line_item_list]
             result.append({
                 "reservation_id": rsv.get_reservation_id,
                 "status": rsv._Reservation__status.value,
                 "due_date": rsv._Reservation__due_date.strftime("%Y-%m-%d"),
-                "items": len(rsv._Reservation__line_item_list)
+                "items": item_ids
             })
         return result
     
     def cancel_reservation(self, reservation_id):
-        target_rsv = None
         for rsv in self.__reservation_list:
             if rsv.get_reservation_id == reservation_id:
+                if rsv._Reservation__status != ReserveStatus.CONFIRMED:
+                    return f"failed: cannot cancel reservation with status {rsv._Reservation__status.value}"
                 rsv.update_status(ReserveStatus.CANCELLED)
-            return {"status": "success", "message": f"Reservation {reservation_id} cancelled"}
-        return {"status": "failed", "message": "Reservation not found"}
+                return f"success: {reservation_id} cancelled"
+        return "failed: Reservation not found"
 
-    def add_to_cart(self):
-        pass
+    @property
+    def line_item_list(self):
+        return self.__line_item_list
+
+    def add_to_cart(self, line_item):
+        from transaction import LineItem
+        if isinstance(line_item, LineItem):
+            self.__line_item_list.append(line_item)
+        else:
+            raise TypeError("Please add LineItem only")
+
+    def clear_cart(self):
+        self.__line_item_list = []
+
+    @property
+    def get_user_item_list(self):
+        return self.__line_item_list
 
     def check_blacklist(self):
         return self.__is_blacklist
@@ -135,7 +153,6 @@ class User:
                 elif certificate is None: return True
                 else: return False
         return False
-
 
     def check_in(self, reservation_id, space_id):
         pass
@@ -200,7 +217,11 @@ class User:
 
     def reserve(self):
         pass
+
+    def return_resource(self, reservation_id, resource_id=None):
+        pass
     
+
     def add_reservation(self, reservation):
         from transaction import Reservation
         if isinstance(reservation, Reservation):
@@ -250,6 +271,10 @@ class Admin:
     def __validate_input_name(self, name):
         if all(char.isalpha() or char.isspace() for char in name) and name != "": return name
         else: raise ValueError("Name must be character or space")
+
+    @property
+    def get_id(self):
+        return self.__admin_id
 
     def force_cancel_membership(self,  user_id, reason):
         pass

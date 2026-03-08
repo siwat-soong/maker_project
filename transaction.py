@@ -15,9 +15,6 @@ class Reservation:
         self.__due_date = due_date
         self.__status = ReserveStatus.CONFIRMED
         self.__line_item_list = []
-
-    def __str__(self):
-        return f"[{self.__reservation_id}] status={self.__status.value} due={self.__due_date.strftime('%Y-%m-%d')} items={len(self.__line_item_list)}"
     
     # Input Validation
     def __validate_input_owner(self, owner):

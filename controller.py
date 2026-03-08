@@ -54,10 +54,22 @@ class Club:
                 return user
         return None
     
+    def search_payment_method_by_name(self, name: str):
+        for pm in self.__payment_method_list:
+            if name.lower() in pm.__class__.__name__.lower():
+                return pm
+        return None
+    
     def search_member_by_id(self, user_id):
         for user in self.__user_list:
             if (user.get_role == UserRole.ANNUALMEMBER ) and user.get_id == user_id:
                 return user
+        return None
+    
+    def search_admin_by_id(self, admin_id):
+        for admin in self.__admin_list:
+            if admin.get_id == admin_id:
+                return admin
         return None
 
     def search_resource_by_id(self, resource_id):
@@ -68,65 +80,182 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
-    
-    def search_payment_method_by_name(self, payment_method):
-        for pm in self.__payment_method_list:
-            if payment_method.lower() in pm.__class__.__name__.lower():
-                return pm
-        return None
+
+    def search_event_by_id(self, event_id):
+        for event in self.__event_list:
+            if event.get_id == event_id:
+                return event
 
     def get_user_list(self):
         return self.__user_list
         
     def get_resource_list(self):
         return self.__space_list + self.__equipment_list + self.__material_list
+    
+    def show_event_attenders(self, event_id):
+        event = self.search_event_by_id(event_id)
+        if not event:
+            return {"error": "Event not found"}
+        return {
+            "event_id": event_id,
+            "status": event._Event__status.value,
+            "attenders": event.get_attenders() or [],
+            "count": len(event._Event__attenders)
+        }
+
+
+    def close_event(self, instructor_id: str, event_id: str, expired_days: int = None):
+        from event_class import Certificate, Event
+        from enum_class import EventStatus
+
+        # 1. หา Instructor
+        instructor = next((i for i in self.__instructor_list if i.get_id == instructor_id), None)
+        if not instructor:
+            return {"error": "Instructor not found"}
+
+        # 2. หา Event
+        target_event = next((e for e in self.__event_list if e._Event__event_id == event_id), None)
+        if not target_event:
+            return {"error": "Event not found"}
+
+        # 3. เช็คว่า Event ยังไม่ CLOSED
+        if target_event._Event__status == EventStatus.CLOSED:
+            return {"error": "Event is already closed"}
+
+        # 4. เช็คว่ามีคนเข้าร่วม
+        attenders = target_event._Event__attenders
+        if not attenders:
+            return {"error": "No attenders in this event"}
+
+        # 5. ปิด Event
+        target_event._Event__status = EventStatus.CLOSED
+        certified_topic = target_event._Event__certified_topic
+
+        # 6. ออก Certificate ให้ทุกคนที่เข้าร่วม
+        now = datetime.now()
+        expired_date = now + timedelta(days=expired_days) if expired_days else None
+        issued = []
+
+        for user in attenders:
+            try:
+                cert = Certificate(user, target_event, certified_topic, now, expired_date)
+                user.add_certificate(cert)
+                issued.append(user.get_id)
+            except Exception as e:
+                issued.append(f"{user.get_id} (failed: {e})")
+
+        return {
+            "status": "success",
+            "event_id": event_id,
+            "certified_topic": certified_topic.value,
+            "expired_date": expired_date.strftime("%Y-%m-%d") if expired_date else "no expiry",
+            "issued_to": issued,
+            "message": f"Event closed. {len(issued)} certificate(s) issued"
+        }
+
+    def reserve(self, user_id: str, due_date):
+        from enum_class import ResourceStatus
+        from resource_class import Material
+        from transaction import Invoice, Reservation
+
+        target_user = None
+        for user in self.__user_list:
+            if user.get_id == user_id:
+                target_user = user
+                break
+
+        if target_user is None:
+            return {"error": "User not found"}
+
+        cart = target_user.line_item_list
+        if not cart:
+            return {"error": "Cart is empty"}
+
+        booking_list = []
+        purchase_list = []
+
+        for line_item in cart:
+            item = line_item.get_resource
+            item.update_status(ResourceStatus.RESERVED)
+            if isinstance(item, Material):
+                purchase_list.append(line_item)
+            else:
+                booking_list.append(line_item)
+
+        if purchase_list:
+            invoice = Invoice(target_user, purchase_list)
+            target_user.add_invoice(invoice)
+
+        if booking_list:
+            reservation = Reservation(target_user, due_date)
+            for li in booking_list:
+                reservation.add_line_item(li)
+            target_user.add_reservation(reservation)
+
+        target_user.clear_cart()
+
+        reserved_ids = [li.get_resource.get_id for li in booking_list + purchase_list]
+        return {
+            "reservation_id": reservation.get_reservation_id if booking_list else None,
+            "user_id": user_id,
+            "resources": reserved_ids,
+            "due_date": due_date.strftime("%Y-%m-%d %H:%M"),
+            "status": "CONFIRMED",
+            "message": f"Reserved {len(reserved_ids)} item(s) successfully"
+        }
 
     def process_return(self, user_id: str, reservation_id: str, item_ids: list):
-        target_user = self.search_user_by_id(user_id)
+        target_user = next((u for u in self.__user_list if u.get_id == user_id), None)
         if not target_user:
-            return "⚠️ User not found"
+            return {"error": "User not found"}
 
         target_reservation = target_user.search_reservation_by_id(reservation_id)
         if not target_reservation:
-            return "⚠️ Reservation not found"
+            return {"error": "Reservation not found"}
 
+        # ตรวจว่าทุก item มีอยู่จริงก่อน
         target_items = []
         for item_id in item_ids:
             item = target_reservation.check_item(item_id)
             if not item:
-                return f"⚠️ Item not found: {item_id}"
+                return {"error": f"Item not found: {item_id}"}
             target_items.append((item_id, item))
 
+        # คืนทุกชิ้น รวม cost เป็น invoice เดียว
         total_cost = 0.0
         for item_id, _ in target_items:
             total_cost += target_reservation.return_items(item_id)
 
         invoice = Invoice(target_user, reservation=target_reservation, cost=total_cost)
 
+        # pop items ออกหลัง return ครบแล้ว
         for _, item in target_items:
             target_reservation.pop_item(item)
 
+        # ถ้ายอด 0 — ออกใบเสร็จเลย
         if total_cost == 0:
             from payment_class import Cash
-            from transaction import Receipt
             invoice.mark_as_paid()
+            from transaction import Receipt
             receipt = Receipt(target_user, Cash(), invoice)
+            target_user._User__receipt_list.append(receipt)
             target_user.add_invoice(invoice)
-            target_user.add_receipt(receipt)
             return {
                 "receipt_id": receipt.receipt_id,
-                "returned_items": [i for i, _ in target_items],
-                "cost": total_cost,
-                "payment_status": "PAID"
+                "cost": 0.0,
+                "payment_status": "PAID",
+                "message": f"Auto-paid (no charge) — {len(target_items)} item(s) returned"
             }
-        else:
-            target_user.add_invoice(invoice)
-            return {
-                "invoice_id": invoice.get_id,
-                "returned_items": [i for i, _ in target_items],
-                "cost": total_cost,
-                "payment_status": "UNPAID"
-            }
+
+        target_user.add_invoice(invoice)
+        return {
+            "invoice_id": invoice.get_id,
+            "cost": invoice.get_cost(),
+            "payment_status": "UNPAID",
+            "returned_items": [i for i, _ in target_items],
+            "message": "Invoice added"
+        }
+
 
 # Init Function
 def system_init():
@@ -174,9 +303,10 @@ def system_init():
         maker.add_event(event1)
         maker.add_member(jane.get_id)
 
-        # ── Butter Test ────────
+        # ── Seed Reservations (ID คงที่ ไม่เปลี่ยนทุก restart) ────────
         now = datetime.now()
 
+        # Jane ยืม 3D Printer และ Tool Set
         rsv_jane = Reservation(jane, now + timedelta(days=3), fixed_id="REV-JANE-001")
         li_printer = LineItem(printer_a, 1, now - timedelta(hours=2), now + timedelta(days=3))
         li_tool    = LineItem(tool_set_a, 1, now - timedelta(hours=2), now + timedelta(days=3))
@@ -184,11 +314,13 @@ def system_init():
         rsv_jane.add_line_item(li_tool)
         jane.add_reservation(rsv_jane)
 
+        # Jira ยืม Laser Cutter (overdue)
         rsv_jira = Reservation(jira, now - timedelta(days=1), fixed_id="REV-JIRA-001")
         li_laser = LineItem(laser_cutter_a, 1, now - timedelta(days=3), now - timedelta(days=1))
         rsv_jira.add_line_item(li_laser)
         jira.add_reservation(rsv_jira)
 
+        # Jane ยืมหลายชิ้น overdue 2 วัน (สำหรับ test คืนหลายอัน + จ่ายหลาย invoice)
         rsv_jane_overdue = Reservation(jane, now - timedelta(days=2), fixed_id="REV-JANE-OVD")
         li_printer_ovd = LineItem(printer_a, 1, now - timedelta(days=5), now - timedelta(days=2))
         li_tool_ovd    = LineItem(tool_set_a, 1, now - timedelta(days=5), now - timedelta(days=2))
@@ -196,6 +328,7 @@ def system_init():
         rsv_jane_overdue.add_line_item(li_tool_ovd)
         jane.add_reservation(rsv_jane_overdue)
 
+        # Jira ยืม Laser Cutter อีกชุด overdue 3 วัน
         rsv_jira2 = Reservation(jira, now - timedelta(days=3), fixed_id="REV-JIRA-002")
         li_laser2 = LineItem(laser_cutter_a, 1, now - timedelta(days=6), now - timedelta(days=3))
         rsv_jira2.add_line_item(li_laser2)
@@ -212,6 +345,7 @@ def system_init():
         print("\n")
 
         return maker
+
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")

@@ -49,6 +49,14 @@ class Event:
                 self.__status = EventStatus.FULL
         else: raise SystemError("Join over limit")
     
+    def get_attenders(self):
+        for u in self.__attenders:
+            return f"'user_id': {u.get_id}\n 'name': {u._User__name}\n"
+        
+    @property
+    def get_id(self):
+        return self.__event_id
+            
     def remove_attender(self, user):
         for attender in self.__attenders:
             if user.get_id == attender.get_id:
