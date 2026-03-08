@@ -1,6 +1,6 @@
 from enum_class import ReserveStatus
 from datetime import datetime
-from resource import *
+from resource_class import *
 from enum_class import *
 from event_class import *
 from user_class import *
@@ -51,21 +51,24 @@ class Reservation:
     def check_late_return(self):
         pass
 class Invoice:
-    def __init__(self,user,invoice_id,status,line_item_list = None,event=None):
+    def __init__(self, user, line_item_list=None, event=None, reservation=None, payment_method=None, cost=0):
         self.__user = user
-        self.__invoice_id = invoice_id
+        self.__invoice_id = f"INV-{str(uuid.uuid4().int)[:10]}"
         self.__line_item_list = line_item_list
-        self.__event = event
-        self.__status = status
-        self.__price = 0
+        self.__event = event    
+        self.__reservation = reservation
+        self.__payment_method = payment_method
+        self.__price = cost
+        self.__paid = False
+
     def calculate_total_price(self):
-        if self.__line_item_list != None:
-            for line_item in self.__line_item_:
-                self.__price+=line_item.calculate_fee(self.__user,line_item.get_amount,None)
-        if self.__event != None:
-            self.__price+=self.__event.join_fee
+        if self.__line_item_list is not None:
+            for line_item in self.__line_item_list:
+                self.__price += line_item.calculate_fee(self.__user, line_item.get_amount, None)
+        if self.__event is not None:
+            self.__price += self.__event.join_fee
         if self.__user.get_role == UserRole.GUEST:
-                self.__price += User.MEMBER_FEE
+            self.__price += User.MEMBER_FEE
     @property
     def user(self):
         return self.__user

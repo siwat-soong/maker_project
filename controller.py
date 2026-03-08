@@ -1,10 +1,3 @@
-from datetime import time
-from user_class import *
-from enum_class import *
-from resource_class import *
-from payment_class import *
-from event_class import *
-from transaction import *
 class Club:
     def __init__(self, name):
         self.__name = name
@@ -16,41 +9,56 @@ class Club:
         self.__material_list = []
         self.__payment_method_list = []
         self.__event_list = []
+        self.__notification = []
     
     # Add Method
     def add_user(self, user):
+        from user_class import User
         if isinstance(user, User):
             self.__user_list.append(user)
 
     def add_instructor(self, instructor):
+        from user_class import Instructor
         if isinstance(instructor, Instructor):
             self.__instructor_list.append(instructor)
 
     def add_admin(self, admin):
+        from user_class import Admin
         if isinstance(admin, Admin):
             self.__admin_list.append(admin)
     
+    def add_member(self,member):
+        pass
+    
     def add_resource(self, resource):
+        from resource_class import (Space , Equipment, Material)
         if isinstance(resource, Space): self.__space_list.append(resource)
         elif isinstance(resource, Equipment): self.__equipment_list.append(resource)
         elif isinstance(resource, Material): self.__material_list.append(resource)
     
     def add_payment_method(self, payment_method):
+        from payment_class import PaymentMethod
         if isinstance(payment_method, PaymentMethod):
             self.__payment_method_list.append(payment_method)
 
     def add_event(self, event):
+        from event_class import Event
         if isinstance(event, Event):
             self.__event_list.append(event)
+    
+    def add_notification(self,noti):
+        self.__notification.append(noti)
             
     # Search Method
     def search_user_by_id(self, user_id):
+        from user_class import User 
         for user in self.__user_list:
             if user.get_id == user_id:
                 return user
         return None
     
     def search_member_by_id(self, user_id):
+        from enum_class import UserRole
         for user in self.__user_list:
             if (user.get_role == UserRole.ANNUALMEMBER ) and user.get_id == user_id:
                 return user
@@ -64,10 +72,84 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    
+    def reserve(self, user_id):
+        from enum_class import ResourceStatus
+        from resource_class import Material
+        from transaction import Invoice, Notification, Reservation
+        # ==========================================
+
+        target_user = None
+        for user in self.__user_list:
+            if user.get_id == user_id: 
+                target_user = user
+                break
+        
+        if target_user is None:
+            return {"status": "error", "message": "This user is not found"}
+
+        cart = target_user.line_item_list
+        
+        if not cart:
+            return {"status": "error", "message": "cart is empty"}
+
+        booking_list = []
+        purchase_list = []
+
+    
+        for line_item in cart:
+            qty = line_item.get_qty
+            item = line_item.get_item
+
+            item.update_resource(ResourceStatus.RESERVE, qty)
+
+        
+            if isinstance(item, Material):
+                if item.stock_qty <= item.minimum_stock: 
+                    noti_detail = f"{item.unit_name} is running out of stock!"
+                    club_noti = Notification(self, "Out Min Stock", noti_detail)
+                    self.add_notification(club_noti)
+                
+                purchase_list.append(line_item)
+            else:
+                booking_list.append(line_item)
+
+        if purchase_list:
+            invoice = Invoice(target_user, purchase_list)
+            target_user.add_invoice(invoice)
+
+        if booking_list:
+            reservation = Reservation(target_user, booking_list)
+            target_user.add_reservation(reservation)
+
+       
+        target_user.clear_cart()
+
+        user_noti = Notification(target_user, "Reservation to Event or Equipment", booking_list)
+        target_user.notify(user_noti)
+
+    
+        return {"status": "success", "message": "Reservation to Event or Equipment list success"}
 
 
 # Init Function
 def system_init():
+    from datetime import time
+    from controller import Club
+    from enum_class import EquipmentType, Expertise, SpaceType
+    from event_class import Event
+    from payment_class import Cash, QRCode
+    from resource_class import (
+        Acrylic,
+        Filament,
+        LaserCutter,
+        Plank,
+        Space,
+        ThreeDPrinter,
+        ToolSet,
+    )
+    from user_class import Admin, Instructor, User
+    
     try:
         # Create Instance
         maker = Club("maker")
@@ -79,7 +161,7 @@ def system_init():
         jerry = Admin("ADM002", "Jerry", "reception")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         desk_a = Space("DESK-001", SpaceType.HOT_DESK, 8, time(10, 0), time(22, 0))
-        room_a = Space("room-001", SpaceType.MEETING_ROOM, time(10, 0), time(22, 0))
+        room_a = Space("room-001", SpaceType.MEETING_ROOM,50,time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")

@@ -146,6 +146,18 @@ class Material(Resource):
     @property
     def get_supported_machine(self):
         return self.__supported_machine
+    
+    @property
+    def minimum_stock(self):
+        return self.__minimum_stock
+     
+    @property
+    def stock_qty(self):
+        return self.__stock_qty
+    
+    @property
+    def unit_name(self):
+        return self.__unit_name
 
     # Abstract Method
     def calculate_fee(self, user, amount, duration):

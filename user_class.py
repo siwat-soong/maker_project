@@ -1,8 +1,6 @@
 from datetime import datetime
 from enum_class import UserRole, Expertise
-from event_class import *
-from enum_class import *
-
+from event_class import Certificate
 # User & sub class
 class User:
     MEMBER_FEE = 100
@@ -18,6 +16,7 @@ class User:
         self.__line_item_list = []
         self.__unpaid_balance = 0
         self.__is_blacklist = False
+        self.__invoice_list = []
 
 
     # Print Method
@@ -57,6 +56,10 @@ class User:
         if self.__role == UserRole.ANNUALMEMBER:
             return 14
         else : return 1
+    @property
+    def line_item_list(self):
+        return self.__line_item_list
+    
     def __repr__(self):
         if self.__role == UserRole.ANNUALMEMBER:
             return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
@@ -81,6 +84,12 @@ class User:
         from transaction import Receipt
         if isinstance(receipt, Receipt):
             self.__notification_list.append(receipt)
+    
+    def add_invoice(self,invoice):
+        self.__invoice_list.append(invoice)
+
+    def add_reservation(self,reservation):
+        self.__reservation_list
 
     def add_item_list(self, line_item):
         pass
@@ -127,6 +136,9 @@ class User:
 
     def return_resource(self, reservation_id, resource_id=None):
         pass
+
+    def clear_cart(self):
+        self.__line_item_list = []
     
 
 class Instructor(User):
