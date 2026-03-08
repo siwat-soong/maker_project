@@ -7,6 +7,7 @@ import uvicorn
 from controller import *
 from payment_class import Cash, QRCode
 from contextlib import asynccontextmanager
+from fastmcp import FastMCP
 
 maker = None
 
