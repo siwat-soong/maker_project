@@ -62,10 +62,10 @@ class Space(Resource):
     def show_detail(self):
         return {
             "resource_id": self.get_id,
+            "status": self.get_status.value if hasattr(self.get_status, 'value') else self.get_status, 
             "category": "Space",
             "space_type": self.__space_type.value if hasattr(self.__space_type, 'value') else self.__space_type,
             "capacity": self.__capacity,
-            # รวมเวลาเปิด-ปิดให้อ่านง่ายขึ้น
             "operating_hours": f"{self.__opening_time.strftime('%H:%M')} - {self.__closing_time.strftime('%H:%M')}"
         }
 class Equipment(Resource):
@@ -93,6 +93,8 @@ class Equipment(Resource):
     def show_detail(self):
         return {
             "resource_id": self.get_id,
+            # 🌟 เพิ่มบรรทัดนี้เข้าไป
+            "status": self.get_status.value if hasattr(self.get_status, 'value') else self.get_status,
             "category": "Equipment",
             "equipment_type": self.__eq_type.value if hasattr(self.__eq_type, 'value') else self.__eq_type,
             "required_cert": self.__required_cert.value if hasattr(self.__required_cert, 'value') else self.__required_cert
@@ -225,6 +227,7 @@ class Filament(Material):
             "resource_id": self.get_id,
             "category": "Material",
             "material_name": "Filament",
+            "status": self.get_status.value if hasattr(self.get_status, 'value') else self.get_status,
             "filament_type": self.__filament_type,
             "diameter": self.__diameter,
             "color": self.__color,
@@ -252,6 +255,7 @@ class Acrylic(Material):
             "resource_id": self.get_id,
             "category": "Material",
             "material_name": "Acrylic",
+            "status": self.get_status.value if hasattr(self.get_status, 'value') else self.get_status,
             "thickness": self.__diameter, # ในโค้ดคุณเก็บความหนาไว้ใน __diameter
             "color": self.__color,
             "dimension": self.__dimension,
@@ -278,6 +282,7 @@ class Plank(Material):
             "resource_id": self.get_id,
             "category": "Material",
             "material_name": "Plank",
+            "status": self.get_status.value if hasattr(self.get_status, 'value') else self.get_status,
             "wood_type": self.__wood_type,
             "thickness": self.__diameter, # ในโค้ดคุณเก็บความหนาไว้ใน __diameter
             "stock_quantity": f"{self.stock_qty} {self.unit_name}"

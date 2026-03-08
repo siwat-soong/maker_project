@@ -81,7 +81,22 @@ class Club:
                 detail = material.show_detail()
                 available_resource.append(detail)
         return available_resource
-
+    
+    def request_show_all_resource(self):
+        show_resource = []
+        for space in self.__space_list:
+            detail = space.show_detail()
+            show_resource.append(detail)
+            
+        for equipment in self.__equipment_list:
+            detail = equipment.show_detail()
+            show_resource.append(detail)
+            
+        for material in self.__material_list:
+            detail = material.show_detail()
+            show_resource.append(detail)
+            
+        return show_resource
 
 # Init Function
 def system_init():
