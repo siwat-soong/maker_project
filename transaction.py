@@ -1,6 +1,6 @@
 from enum_class import ReserveStatus
 from datetime import datetime
-from resource import *
+from resource_class import *
 from enum_class import *
 from event_class import *
 from user_class import *

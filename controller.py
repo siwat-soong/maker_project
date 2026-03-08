@@ -21,6 +21,8 @@ class Club:
     def add_user(self, user):
         if isinstance(user, User):
             self.__user_list.append(user)
+    def add_member(self,user):
+        pass
 
     def add_instructor(self, instructor):
         if isinstance(instructor, Instructor):
@@ -64,6 +66,21 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    def request_show_available_resource(self):
+        available_resource = []
+        for space in self.__space_list:
+            if space.get_status == ResourceStatus.AVAILABLE:
+                detail = space.show_detail()
+                available_resource.append(detail)
+        for equipment in self.__equipment_list:
+            if equipment.get_status == ResourceStatus.AVAILABLE:
+                detail = equipment.show_detail()
+                available_resource.append(detail)
+        for material in self.__material_list:
+            if material.get_status == ResourceStatus.AVAILABLE:
+                detail = material.show_detail()
+                available_resource.append(detail)
+        return available_resource
 
 
 # Init Function
@@ -79,7 +96,7 @@ def system_init():
         jerry = Admin("ADM002", "Jerry", "reception")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         desk_a = Space("DESK-001", SpaceType.HOT_DESK, 8, time(10, 0), time(22, 0))
-        room_a = Space("room-001", SpaceType.MEETING_ROOM, time(10, 0), time(22, 0))
+        room_a = Space("room-001", SpaceType.MEETING_ROOM,50, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")

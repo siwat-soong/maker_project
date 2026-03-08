@@ -11,6 +11,10 @@ class Resource(ABC):
     def get_id(self):
         return self.__resource_id
     
+    @property
+    def get_status(self):
+        return self.__status
+    
     def update_status(self, status):
         if isinstance(status, ResourceStatus):
             self.__status = status
@@ -54,6 +58,16 @@ class Space(Resource):
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
         pass
 
+    #show detail
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "category": "Space",
+            "space_type": self.__space_type.value if hasattr(self.__space_type, 'value') else self.__space_type,
+            "capacity": self.__capacity,
+            # รวมเวลาเปิด-ปิดให้อ่านง่ายขึ้น
+            "operating_hours": f"{self.__opening_time.strftime('%H:%M')} - {self.__closing_time.strftime('%H:%M')}"
+        }
 class Equipment(Resource):
     def __init__(self, resource_id, required_cert, eq_type):
         super().__init__(resource_id)
@@ -75,6 +89,14 @@ class Equipment(Resource):
     
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
         pass
+
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "category": "Equipment",
+            "equipment_type": self.__eq_type.value if hasattr(self.__eq_type, 'value') else self.__eq_type,
+            "required_cert": self.__required_cert.value if hasattr(self.__required_cert, 'value') else self.__required_cert
+        }
 
 class ThreeDPrinter(Equipment):
     def __init__(self, resource_id, required_cert, eq_type, print_volume, current_filament):
@@ -146,6 +168,14 @@ class Material(Resource):
     @property
     def get_supported_machine(self):
         return self.__supported_machine
+    
+    @property
+    def unit_name(self):
+        return self.__unit_name
+    
+    @property
+    def stock_qty(self):
+        return self.__stock_qty
 
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
@@ -190,6 +220,16 @@ class Filament(Material):
 
     def calculate_fee(self, user, amount, duration):
         pass
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "category": "Material",
+            "material_name": "Filament",
+            "filament_type": self.__filament_type,
+            "diameter": self.__diameter,
+            "color": self.__color,
+            "stock_quantity": f"{self.stock_qty} {self.unit_name}" # รวมตัวเลขกับหน่วยเข้าด้วยกัน
+        }
 
 class Acrylic(Material):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, color, dimension):
@@ -207,6 +247,16 @@ class Acrylic(Material):
 
     def calculate_fee(self, user, amount, duration):
         pass
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "category": "Material",
+            "material_name": "Acrylic",
+            "thickness": self.__diameter, # ในโค้ดคุณเก็บความหนาไว้ใน __diameter
+            "color": self.__color,
+            "dimension": self.__dimension,
+            "stock_quantity": f"{self.stock_qty} {self.unit_name}"
+        }
 
 class Plank(Material):
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, wood_type):
@@ -223,3 +273,12 @@ class Plank(Material):
 
     def calculate_fee(self, user, amount, duration):
         pass
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "category": "Material",
+            "material_name": "Plank",
+            "wood_type": self.__wood_type,
+            "thickness": self.__diameter, # ในโค้ดคุณเก็บความหนาไว้ใน __diameter
+            "stock_quantity": f"{self.stock_qty} {self.unit_name}"
+        }
