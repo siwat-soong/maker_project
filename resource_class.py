@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum_class import ResourceStatus, SpaceType, EquipmentType, Expertise
-from datetime import time
+from datetime import time,datetime,timedelta
 
 class Resource(ABC):
     def __init__(self, resource_id):
@@ -27,6 +27,33 @@ class Resource(ABC):
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
         pass
 
+    def validate_reservable(self, user, amount, start_time, end_time, line_item_list):
+        # Check Blacklist
+        if user.check_blacklist(): return False
+
+        if isinstance(self, Material): 
+            return self.check_deductible(amount)
+        elif isinstance(self, (Space, Equipment)): 
+            for item in line_item_list:
+                if item.check_overlap_date_time(start_time, end_time):
+                    return False
+                
+    #         def is_resource_available(resource, start_dt, end_dt, line_item_list):
+    # if resource.check_status(ResourceStatus.MAINTENANCE):
+    #     return False
+    # for item in line_item_list:
+    #     if item.check_overlap_date_time(start_time, end_time):
+    #         return False
+    # return True
+            if isinstance(self, Equipment) and not user.check_certified(self.get_cert): return False
+            
+            if self.check_status(ResourceStatus.MAINTENANCE): return False
+
+            if datetime.now() + timedelta(days=user.get_max_reserve_days) < start_time: return False
+            if start_time < datetime.now(): return False
+
+            return True
+
 class Space(Resource):
     def __init__(self, resource_id, space_type, capacity, opening_time, closing_time):
         super().__init__(resource_id)
@@ -46,7 +73,9 @@ class Space(Resource):
             else: raise Exception()
         except: raise ValueError("Capacity must be positive integer")
 
-    
+    def search_room(self):
+        pass
+
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
         pass
