@@ -20,7 +20,6 @@ class User:
         self.__unpaid_balance = 0
         self.__is_blacklist = False
 
-
     # Print Method
     def __repr__(self):
         return f"👤 User:\nID = {self.__user_id}\nNAME = {self.__name}\nTEL = {self.__tel}\n"
@@ -97,10 +96,23 @@ class User:
         pass
 
     def list_reserve_history(self):
-        pass
+        result = []
+        for rsv in self.__reservation_list:
+            result.append({
+                "reservation_id": rsv.get_reservation_id,
+                "status": rsv._Reservation__status.value,
+                "due_date": rsv._Reservation__due_date.strftime("%Y-%m-%d"),
+                "items": len(rsv._Reservation__line_item_list)
+            })
+        return result
     
-    def cancel_reservation(self, reservation_id, cancel_date_time):
-        pass
+    def cancel_reservation(self, reservation_id):
+        target_rsv = None
+        for rsv in self.__reservation_list:
+            if rsv.get_reservation_id == reservation_id:
+                rsv.update_status(ReserveStatus.CANCELLED)
+            return {"status": "success", "message": f"Reservation {reservation_id} cancelled"}
+        return {"status": "failed", "message": "Reservation not found"}
 
     def add_to_cart(self):
         pass
@@ -178,11 +190,7 @@ class User:
 
     def reserve(self):
         pass
-
-    def return_resource(self, reservation_id, resource_id=None):
-        pass
     
-
     def add_reservation(self, reservation):
         from transaction import Reservation
         if isinstance(reservation, Reservation):
