@@ -3,10 +3,13 @@ from resource_class import Space
 from datetime import datetime
 
 class Event:
-    def __init__(self, event_id, event_topic, event_detail, instructor, space, max_attender, join_fee, certified_topic):
+    def __init__(self, event_id, event_topic, event_detail, start_time, end_time, instructor, space, max_attender, join_fee, certified_topic):
         from user_class import Instructor
         self.__event_id = event_id
+        self.__event_topic = event_topic
         self.__event_detail = event_detail
+        self.__start_time = start_time
+        self._end_time = end_time
         self.__instructor = self.__validate_input_specific_type(instructor, Instructor)
         self.__space = self.__validate_input_specific_type(space, Space)
         self.__max_attender = self.__validate_input_number(max_attender, 1)
@@ -26,6 +29,10 @@ class Event:
             else: raise Exception()
         except: raise ValueError(f"Number must be equal or greater than {minimum}")
     
+    @property
+    def event_id(self):
+        return self.__event_id
+    
     def check_attender(self, user_id):
         for user in self.__attenders:
             if user.get_id == user_id: return True
@@ -36,6 +43,7 @@ class Event:
     
     def check_availability(self):
         return self.__status == EventStatus.OPEN
+    
     @property
     def join_fee(self):
         return self.__join_fee
