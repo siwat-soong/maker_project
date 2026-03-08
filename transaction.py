@@ -1,6 +1,6 @@
 from enum_class import ReserveStatus
 from datetime import datetime
-from resource import *
+from resource_class import *
 from enum_class import *
 from event_class import *
 from user_class import *
@@ -50,6 +50,7 @@ class Reservation:
 
     def check_late_return(self):
         pass
+    
 class Invoice:
     def __init__(self,user,invoice_id,status,line_item_list = None,event=None):
         self.__user = user
@@ -138,6 +139,9 @@ class LineItem:
 
     def calculate_sub_total(self):
         pass
+
+    def check_overlap_date_time(self, start_time, end_time):
+        return not (end_time <= self.__start_date_time or start_time >= self.__end_date_time)
 
 class Notification:
     def __init__(self, target, topic, detail):
