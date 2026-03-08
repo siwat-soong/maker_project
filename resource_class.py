@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum_class import ResourceStatus, SpaceType, EquipmentType, Expertise
-from datetime import time,datetime,timedelta
+from datetime import time, timedelta, datetime
 
 class Resource(ABC):
     def __init__(self, resource_id):
@@ -19,6 +19,26 @@ class Resource(ABC):
         if isinstance(status, ResourceStatus) and status == self.__status: return True
         else: return False
     
+    def validate_reservable(self, user, amount, start_time, end_time, line_item_list):
+        # Check Blacklist
+        if user.check_blacklist(): return False
+
+        if isinstance(self, Material): 
+            return self.check_deductible(amount)
+        elif isinstance(self, (Space, Equipment)): 
+            for item in line_item_list:
+                if item.check_overlap_date_time(start_time, end_time):
+                    return False
+            
+            if isinstance(self, Equipment) and not user.check_certified(self.get_cert): return False
+            
+            if self.check_status(ResourceStatus.MAINTENANCE): return False
+
+            if datetime.now() + timedelta(days=user.get_max_reserve_days) < start_time: return False
+            if start_time < datetime.now(): return False
+
+            return True
+
     @abstractmethod
     def calculate_fee(self, user, amount, duration):
         pass
@@ -97,6 +117,10 @@ class Equipment(Resource):
     @property
     def get_eq_type(self):
         return self.__eq_type
+    
+    @property
+    def get_cert(self):
+        return self.__required_cert
     
     # Abstract Method
     def calculate_fee(self, user, amount, duration):
@@ -186,7 +210,7 @@ class Material(Resource):
     def check_deductible(self, amount):
         try:
             if float(amount) >= 0:
-                if self.__stock_qty >= amount  and self.__stock_qty - amount >= self.__minimum_stock: return True
+                if self.__stock_qty >= float(amount)  and self.__stock_qty - float(amount) >= self.__minimum_stock: return True
                 else: return False
             else: raise Exception()
         except: raise ValueError("Amount deduct must equal or greater than 0")

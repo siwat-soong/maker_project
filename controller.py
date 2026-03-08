@@ -126,7 +126,7 @@ def system_init():
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
         acrylic_a = Acrylic("ACL-001", 20, "plate", 0, EquipmentType.LASER_CUTTER, 2, "CLEAR", "20x20")
         laser_cutter_a = LaserCutter("LSC-001", Expertise.LASER_CUTTER, EquipmentType.LASER_CUTTER, "120x120", None)
-        tool_set_a = ToolSet("TOOL-001", Expertise.BASIC, EquipmentType.TOOL_SET, 5)
+        tool_set_a = ToolSet("TOOL-001", None, EquipmentType.TOOL_SET, 5)
         cash_machine = Cash()
         qr_machine = QRCode()
 
@@ -158,3 +158,5 @@ def system_init():
     except Exception as e:
         print("-"*10, "❌ Init Failed ", sep=" ", end="-"*10)
         print(f"\n - {e}")
+
+system_init()

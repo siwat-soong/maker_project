@@ -46,7 +46,7 @@ class User:
     @property
     def get_tel(self):
         return self.__tel
-    
+        
     @property
     def get_role(self):
         return self.__role
@@ -68,6 +68,14 @@ class User:
                 self.__expired_date = current_date.replace(year=current_date.year + 1)
                 self.__monthly_quota = 120 # minutes
     
+    @property
+    def get_user_reservation(self):
+        return self.__reservation_list
+    
+    @property
+    def get_user_item_list(self):
+        return self.__line_item_list
+
     def notify(self, notification):
         from transaction import Notification
         if isinstance(notification, Notification):
@@ -82,8 +90,10 @@ class User:
             self.__notification_list.append(invoice)
 
     def add_item_list(self, line_item):
-        pass
-        
+        from transaction import LineItem
+        if isinstance(line_item, LineItem):
+            self.__line_item_list.append(line_item)
+
     def add_certificate(self, certificate):
         if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
         else: raise TypeError("Please add certificate only")
@@ -98,16 +108,19 @@ class User:
         pass
 
     def add_to_cart(self):
-        pass
+        # teetee edit na
+        return True
 
     def check_blacklist(self):
         return self.__is_blacklist
     
     def check_certified(self, required_certified):
+        if required_certified is None: return True
+
         for certificate in self.__certificate_list:
             if certificate.get_certified_topic == required_certified:
-                if certificate.get_expired_date is not None and datetime.now() < certificate.get_expired_date: return True
-                elif certificate is None: return True
+                if certificate.get_expired_date is not None and  datetime.now() < certificate.get_expired_date: return True
+                elif certificate is None or certificate.get_expired_date is None: return True
                 else: return False
         return False
 

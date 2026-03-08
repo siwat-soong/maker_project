@@ -122,6 +122,14 @@ class LineItem:
     @property 
     def get_amount(self) :
         return self.__amount
+
+    @property
+    def get_start_date_time(self):
+        return self.__start_date_time
+    
+    @property
+    def get_end_date_time(self):
+        return self.__end_date_time
     
     # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
@@ -133,6 +141,9 @@ class LineItem:
             if float(number) > 0: return number
             else: raise Exception()
         except: raise ValueError("Amount must greater than 0")
+    
+    def check_overlap_date_time(self, start_time, end_time):
+        return self.__start_date_time <= start_time <= self.__end_date_time or self.__start_date_time <= end_time <= self.__end_date_time or (start_time < self.__start_date_time and end_time > self.__end_date_time)
     
     def cancel(self, cancel_date_time):
         pass
