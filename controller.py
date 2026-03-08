@@ -17,6 +17,7 @@ class Club:
         self.__material_list = []
         self.__payment_method_list = []
         self.__event_list = []
+        self.__notification_list = []
     
     # Add Method
     def add_user(self, user):
@@ -40,6 +41,23 @@ class Club:
         if isinstance(payment_method, PaymentMethod):
             self.__payment_method_list.append(payment_method)
 
+    def add_event(self, event):
+        if isinstance(event, Event):
+            self.__event_list.append(event)
+
+    def add_notification(self, notification):
+        if isinstance(notification,Notification):
+            self.__notification_list.append(notification)
+
+    def get_all_users(self):
+        return self.__user_list
+    
+    def search_admin_by_id(self, admin_id):
+        for admin in self.__admin_list:
+            if admin.get_id == admin_id:
+                return admin
+        return None
+    
     # Search Method
     def search_user_by_id(self, user_id):
         for user in self.__user_list:
@@ -52,7 +70,13 @@ class Club:
             if (user.get_role == UserRole.ANNUALMEMBER ) and user.get_id == user_id:
                 return user
         return None
-
+    
+    def search_instructor_by_id(self, user_id):
+        for user in self.__instructor_list:
+            if user.get_id == user_id:
+                return user
+        return None
+    
     def search_resource_by_id(self, resource_id):
         for space in self.__space_list: 
             if space.get_id == resource_id: return space
@@ -61,19 +85,27 @@ class Club:
         for mat in self.__material_list: 
             if mat.get_id == resource_id: return mat
         return None
+    
+    def search_all_matching_item(self, resource_id):
+        all_match_item = list()
+        for user in self.__user_list:
+            for rsv in user.get_user_reservation:
+                all_match_item.extend(rsv.list_all_match_line_item(resource_id))
+        
+        return all_match_item
 
-    def add_member(self, user_id):
-        user = self.search_user_by_id(user_id)
-        if not user:
-            return "user not found"
-        else: 
-            if user.check_blacklist():
-                return "You're blacklist"
-            else: 
-                user.change_role(UserRole.ANNUAL_MEMBER)
-                user.create_invoice(user_id, None, None, None, Club.MEMBER_FEE)
-                role = user.role.value
-                return f"success! now you are {role}"
+    # def add_member(self, user_id):
+    #     user = self.search_user_by_id(user_id)
+    #     if not user:
+    #         return "user not found"
+    #     else: 
+    #         if user.check_blacklist():
+    #             return "You're blacklist"
+    #         else: 
+    #             user.change_role(UserRole.ANNUAL_MEMBER)
+    #             user.create_invoice(user_id, None, None, None, Club.MEMBER_FEE)
+    #             role = user.role.value
+    #             return f"success! now you are {role}"
 
 # Init Function
 def system_init():
@@ -88,7 +120,7 @@ def system_init():
         jerry = Admin("ADM002", "Jerry", "reception")
         lab_a = Space("LAB-001", SpaceType.LABORATORY, 10, time(10, 0), time(22, 0))
         desk_a = Space("DESK-001", SpaceType.HOT_DESK, 8, time(10, 0), time(22, 0))
-        room_a = Space("room-001", SpaceType.MEETING_ROOM, time(10, 0), time(22, 0))
+        room_a = Space("ROOM-001", SpaceType.MEETING_ROOM,6, time(10, 0), time(22, 0))
         red_filament = Filament("MAT-001", 2000, "grams", 0, EquipmentType.THREE_D_PRINTER, "PLA", 0.2, "RED")
         printer_a = ThreeDPrinter("3DP-001", Expertise.THREE_D_PRINTER, EquipmentType.THREE_D_PRINTER, "20x20", red_filament)
         wooden_plank = Plank("WDP-001", 10, "plate", 0, EquipmentType.LASER_CUTTER, 5, "SOFT")
@@ -98,7 +130,8 @@ def system_init():
         cash_machine = Cash()
         qr_machine = QRCode()
 
-        event1 = Event("EV-001", "Ossiliscope", "Introduction", amnach, lab_a, 10, 100, Expertise.ADVANCE)
+        # event1 = Event("EV-001", "Ossiliscope", "Introduction", amnach, lab_a, 10, 100, Expertise.ADVANCE)
+        
         # Add Instance
         maker.add_user(jane)
         maker.add_user(jira)
@@ -117,9 +150,6 @@ def system_init():
         maker.add_resource(tool_set_a)
         maker.add_payment_method(cash_machine)
         maker.add_payment_method(qr_machine)
-
-        maker.add_event(event1)
-        maker.add_member(jane.get_id)
 
         print("-"*10, "✅ Init Success ", sep=" ", end="-"*10)
         print("\n")
