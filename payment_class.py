@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 
 class PaymentMethod(ABC):
     @abstractmethod
-    def validate(self):
+    def validate(self, amount, required_cost):
         pass
 
     @abstractmethod
-    def process_payment(self):
+    def process_payment(self, amount):
         pass
 
 class Cash(PaymentMethod):
@@ -15,7 +15,7 @@ class Cash(PaymentMethod):
 
     def process_payment(self, amount):
         print(f"Processing cash payment of {amount}")
-        return True 
+        return True
 
 class QRCode(PaymentMethod):
     def validate(self, amount, required_cost):

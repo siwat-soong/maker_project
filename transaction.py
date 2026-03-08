@@ -7,8 +7,6 @@ from user_class import *
 import uuid
 
 class Reservation:
-    ID_COUNTER = 1
-    
     def __init__(self, owner, due_date, fixed_id=None):
         self.__reservation_id = fixed_id if fixed_id else f"REV-{str(uuid.uuid4().int)[:10]}"
         self.__owner = self.__validate_input_owner(owner)
@@ -16,7 +14,6 @@ class Reservation:
         self.__status = ReserveStatus.CONFIRMED
         self.__line_item_list = []
     
-    # Input Validation
     def __validate_input_owner(self, owner):
         from user_class import User
         if isinstance(owner, User): return owner
@@ -26,13 +23,17 @@ class Reservation:
         if isinstance(status, ReserveStatus):
             self.__status = status
         else:
-            self.__status = status
+            # รับ string ได้ด้วย (เพื่อ backward compat)
+            try:
+                self.__status = ReserveStatus(status)
+            except:
+                self.__status = status
         print(f"Reservation {self.__reservation_id} status updated to: {status}")
 
     @property
     def get_reservation_id(self):
         return self.__reservation_id
-    
+
     def force_cancel_reservation(self):
         pass
 
@@ -40,16 +41,14 @@ class Reservation:
         pass
 
     def list_all_match_line_item(self, resource_id):
-        res = list()
+        res = []
         try:
-            items = getattr(self, "_Reservation__line_item_list", [])
-            for lit in items:
+            for lit in self.__line_item_list:
                 if lit.get_resource.get_id == resource_id:
                     res.append(lit)
-            return res
         except Exception as e:
             print(f"DEBUG: Error in list_all_match_line_item: {e}")
-            return []
+        return res
 
     def calculate_total_cost(self):
         pass
@@ -70,10 +69,10 @@ class Reservation:
             overdue_days = delta.days if delta.days > 0 else 1
 
         for item in self.__line_item_list:
-            if item.get_resource.get_id == item_id: 
-                res = item.get_resource     
+            if item.get_resource.get_id == item_id:
+                res = item.get_resource
                 fee = res.calculate_fee(None, None, overdue_days)
-                total_fee += fee
+                total_fee += fee if fee else 0.0
                 res.update_status(ResourceStatus.AVAILABLE)
             
         self.__status = ReserveStatus.COMPLETED
@@ -90,12 +89,14 @@ class Reservation:
 
     def check_late_return(self):
         pass
+
+
 class Invoice:
     def __init__(self, user, line_item_list=None, event=None, reservation=None, payment_method=None, cost=0):
         self.__user = user
         self.__invoice_id = f"INV-{str(uuid.uuid4().int)[:10]}"
         self.__line_item_list = line_item_list
-        self.__event = event    
+        self.__event = event
         self.__reservation = reservation
         self.__payment_method = payment_method
         self.__price = cost
@@ -136,31 +137,33 @@ class Invoice:
     @property
     def detail(self):
         pass
-        
+
+
 class Receipt:
     def __init__(self, purchased_user, payment_method, invoice):
-        from event_class import Event
         from user_class import User
         from payment_class import PaymentMethod
         self.__receipt_id = f"R-{str(uuid.uuid4().int)[:10]}"
         self.__purchased_user = self.__validate_input_specific_type(purchased_user, User)
         self.__payment_method = self.__validate_input_specific_type(payment_method, PaymentMethod)
         self.__invoice = self.__validate_input_specific_type(invoice, Invoice)
+
     @property
     def receipt_id(self):
         return self.__receipt_id
+
     @property
     def purchased_user(self):
         return self.__purchased_user
+
     @property
     def payment_method(self):
         return self.__payment_method
+
     @property
     def invoice(self):
         return self.__invoice
 
-    
-    # Input Validation
     def __validate_input_specific_type(self, obj, obj_type, none_accepted=False):
         if none_accepted and obj is None: return None
         elif obj is not None and isinstance(obj, obj_type): return obj
@@ -168,15 +171,7 @@ class Receipt:
 
     def get_id(self):
         return self.__receipt_id
-    
-    def get_payment_method(self):
-        return self.__payment_method
-        
-    def get_cost(self):
-        return self.__cost
-        
-    def get_reservation(self):
-        return self.__rsv
+
 
 class LineItem:
     def __init__(self, resource, amount, start_date_time, end_date_time):
@@ -189,11 +184,19 @@ class LineItem:
     @property
     def get_resource(self):
         return self.__resource
-    @property 
-    def get_amount(self) :
+
+    @property
+    def get_amount(self):
         return self.__amount
-    
-    # Input Validation
+
+    @property
+    def get_start_date_time(self):
+        return self.__start_date_time
+
+    @property
+    def get_end_date_time(self):
+        return self.__end_date_time
+
     def __validate_input_specific_type(self, obj, obj_type):
         if isinstance(obj, obj_type): return obj
         else: raise TypeError("Wrong Type")
@@ -203,12 +206,16 @@ class LineItem:
             if float(number) > 0: return number
             else: raise Exception()
         except: raise ValueError("Amount must greater than 0")
-    
+
+    def check_overlap_date_time(self, start_time, end_time):
+        return not (end_time <= self.__start_date_time or start_time >= self.__end_date_time)
+
     def cancel(self, cancel_date_time):
         pass
 
     def calculate_sub_total(self):
         pass
+
 
 class Notification:
     def __init__(self, target, topic, detail):
@@ -217,7 +224,6 @@ class Notification:
         self.__topic = topic
         self.__detail = detail
     
-    # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
         if isinstance(obj, obj_type): return obj
         else: raise TypeError("Wrong Type")

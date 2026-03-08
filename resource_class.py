@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum_class import ResourceStatus, SpaceType, EquipmentType, Expertise
-from datetime import time
+from datetime import time, timedelta, datetime
 
 class Resource(ABC):
     def __init__(self, resource_id):
@@ -18,7 +18,28 @@ class Resource(ABC):
     def check_status(self, status):
         if isinstance(status, ResourceStatus) and status == self.__status: return True
         else: return False
-    
+
+    def validate_reservable(self, user, amount, start_time, end_time, line_item_list):
+        if user.check_blacklist(): return False
+
+        if isinstance(self, Material):
+            return self.check_deductible(amount)
+        elif isinstance(self, (Space, Equipment)):
+            for item in line_item_list:
+                if item.check_overlap_date_time(start_time, end_time):
+                    return False
+
+            if isinstance(self, Equipment) and not user.check_certified(self.get_cert):
+                return False
+
+            if self.check_status(ResourceStatus.MAINTENANCE): return False
+            from user_class import Instructor
+            if not isinstance(user, Instructor):
+                if datetime.now() + timedelta(days=user.get_max_reserve_days) < start_time: return False
+                if start_time < datetime.now(): return False
+
+            return True
+
     @abstractmethod
     def calculate_fee(self, user, amount, duration):
         pass
@@ -35,7 +56,6 @@ class Space(Resource):
         self.__opening_time = self.__validate_input_type(opening_time, time)
         self.__closing_time = self.__validate_input_type(closing_time, time)
 
-    # Input Validation
     def __validate_input_type(self, obj, obj_type):
         if isinstance(obj, obj_type): return obj
         else: raise TypeError(f"{obj} Type not in the list")
@@ -46,8 +66,6 @@ class Space(Resource):
             else: raise Exception()
         except: raise ValueError("Capacity must be positive integer")
 
-    
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
         pass
     
@@ -61,7 +79,6 @@ class Equipment(Resource):
         self.__eq_type = self.__validate_input_specific_type(eq_type, EquipmentType)
         self.__daily_fine = 100
     
-    # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
         if obj is None or isinstance(obj, obj_type): return obj
         else: raise TypeError(f"{obj} is not appropriate type")
@@ -69,10 +86,19 @@ class Equipment(Resource):
     @property
     def get_eq_type(self):
         return self.__eq_type
-    
-    # Abstract Method
+
+    @property
+    def get_cert(self):
+        """ใช้ใน validate_reservable"""
+        return self.__required_cert
+
+    @property
+    def get_required_cert(self):
+        """ใช้ใน add_to_cart cert check"""
+        return self.__required_cert
+
     def calculate_fee(self, user, amount, duration):
-        if duration > 0:
+        if duration is not None and duration > 0:
             return duration * self.__daily_fine
         return 0.0
     
@@ -86,12 +112,10 @@ class ThreeDPrinter(Equipment):
         self.__current_filament = self.__validate_input_current_filament(current_filament)
         self.__filament_usage = 0
     
-    # Input validation
     def __validate_input_current_filament(self, filament):
         if filament is None or isinstance(filament, Filament): return filament
         else: raise TypeError("Please insert filament only")
     
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
         return super().calculate_fee(user, amount, duration)
 
@@ -102,12 +126,10 @@ class LaserCutter(Equipment):
         self.__current_filament = self.__validate_input_current_material(current_material)
         self.__filament_usage = 0
     
-    # Input validation
     def __validate_input_current_material(self, material):
         if material is None or (isinstance(material, Material) and material.get_supported_machine == self.get_eq_type): return material
         else: raise TypeError("Please insert appropriate material")
     
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
         return super().calculate_fee(user, amount, duration)
 
@@ -116,14 +138,12 @@ class ToolSet(Equipment):
         super().__init__(resource_id, required_cert, eq_type)
         self.__tool_count = self.__validate_input_positive_amount(tool_count)
     
-    # Input Validation
     def __validate_input_positive_amount(self, tool_count):
         try:
-            if float(tool_count) > 0: return tool_count
+            if tool_count is None or float(tool_count) > 0: return tool_count
             else: raise Exception()
         except: raise ValueError("Count must greater than 0")
     
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
         return super().calculate_fee(user, amount, duration)
 
@@ -135,7 +155,6 @@ class Material(Resource):
         self.__minimum_stock = self.__validate_input_positive_amount(minimum_stock)
         self.__supported_machine = self.__validate_input_supported_machine(supported_machine)
     
-    # Input Validation
     def __validate_input_positive_amount(self, stock_qty):
         try:
             if float(stock_qty) >= 0: return stock_qty
@@ -150,7 +169,6 @@ class Material(Resource):
     def get_supported_machine(self):
         return self.__supported_machine
 
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
         pass
     
@@ -160,7 +178,7 @@ class Material(Resource):
     def check_deductible(self, amount):
         try:
             if float(amount) >= 0:
-                if self.__stock_qty >= amount  and self.__stock_qty - amount >= self.__minimum_stock: return True
+                if self.__stock_qty >= float(amount) and self.__stock_qty - float(amount) >= self.__minimum_stock: return True
                 else: return False
             else: raise Exception()
         except: raise ValueError("Amount deduct must equal or greater than 0")
@@ -184,7 +202,6 @@ class Filament(Material):
         self.__diameter = self.__validate_input_diameter(diameter)
         self.__color = color
     
-    # Input Validation
     def __validate_input_diameter(self, diameter):
         try:
             if float(diameter) > 0: return diameter
@@ -201,7 +218,6 @@ class Acrylic(Material):
         self.__color = color
         self.__dimension = dimension
     
-    # Input Validation
     def __validate_input_thickness(self, thickness):
         try:
             if float(thickness) > 0: return thickness
@@ -217,7 +233,6 @@ class Plank(Material):
         self.__diameter = self.__validate_input_thickness(thickness)
         self.__wood_type = wood_type
     
-    # Input Validation
     def __validate_input_thickness(self, thickness):
         try:
             if float(thickness) > 0: return thickness

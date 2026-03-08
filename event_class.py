@@ -3,10 +3,13 @@ from resource_class import Space
 from datetime import datetime
 
 class Event:
-    def __init__(self, event_id, event_topic, event_detail, instructor, space, max_attender, join_fee, certified_topic):
+    def __init__(self, event_id, event_topic, event_detail, start_time, end_time, instructor, space, max_attender, join_fee, certified_topic):
         from user_class import Instructor
         self.__event_id = event_id
+        self.__event_topic = event_topic
         self.__event_detail = event_detail
+        self.__start_time = start_time
+        self.__end_time = end_time
         self.__instructor = self.__validate_input_specific_type(instructor, Instructor)
         self.__space = self.__validate_input_specific_type(space, Space)
         self.__max_attender = self.__validate_input_number(max_attender, 1)
@@ -15,7 +18,7 @@ class Event:
         self.__attenders = []
         self.__status = EventStatus.SCHEDULED
 
-        # Input Validation
+    # Input Validation
     def __validate_input_specific_type(self, obj, obj_type):
         if isinstance(obj, obj_type): return obj
         else: raise ValueError("Wrong Type")
@@ -26,6 +29,14 @@ class Event:
             else: raise Exception()
         except: raise ValueError(f"Number must be equal or greater than {minimum}")
     
+    @property
+    def get_id(self):
+        return self.__event_id
+
+    @property
+    def event_id(self):
+        return self.__event_id
+    
     def check_attender(self, user_id):
         for user in self.__attenders:
             if user.get_id == user_id: return True
@@ -35,7 +46,8 @@ class Event:
         return self.__status
     
     def check_availability(self):
-        return self.__status == EventStatus.OPEN
+        return self.__status == EventStatus.SCHEDULED
+
     @property
     def join_fee(self):
         return self.__join_fee
@@ -48,22 +60,17 @@ class Event:
             if len(self.__attenders) == self.__max_attender:
                 self.__status = EventStatus.FULL
         else: raise SystemError("Join over limit")
-    
+
     def get_attenders(self):
-        for u in self.__attenders:
-            return f"'user_id': {u.get_id}\n 'name': {u._User__name}\n"
-        
-    @property
-    def get_id(self):
-        return self.__event_id
-            
+        return [{"user_id": u.get_id, "name": u._User__name} for u in self.__attenders]
+    
     def remove_attender(self, user):
         for attender in self.__attenders:
             if user.get_id == attender.get_id:
                 self.__attenders.remove(attender)
                 if len(self.__attenders) < self.__max_attender:
                     self.__status = EventStatus.OPEN
-    
+
 
 class Certificate:
     def __init__(self, owner, event, certified_topic, certified_date, expired_date=None):
