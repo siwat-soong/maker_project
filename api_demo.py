@@ -36,6 +36,20 @@ def subscribe(user_id):
     except:
         return f'⛔ Subscribe Failed'
 
+@app.post("/pay")
+def pay(user_id, inv_id, cost: float, method_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        inv = user.search_invoice_by_id(inv_id)
+        method = sys.search_method_by_id(method_id)
+        if(method.validate(inv.get_cost, cost)): 
+            change = method.process_payment()
+            user.create_receipt(inv, change, method)
+            return '✅ Pay Success'
+        else: raise Exception
+    except:
+        return f'⛔ Pay Failed'
+
 # Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)

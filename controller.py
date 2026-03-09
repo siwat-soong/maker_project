@@ -1,4 +1,5 @@
 from user_class import User
+from payment_class import Cash, QRCode
 
 class Club:
     def __init__(self, name):
@@ -37,13 +38,23 @@ class Club:
     def search_user_by_id(self, user_id):
         for user in self.__user_list:
             if user.get_id == user_id: return user
+        return None
+
+    def search_method_by_id(self, method_id):
+        for method in self.__payment_method_list:
+            if method.get_id == method_id: return method
+        return None
 
 def system_init():
     try:
         maker = Club("Maker Club")
         butter = User("4517", "Butter", "0144796685")
+        cash = Cash("C-0001", 3000)
+        qr = QRCode("Q-0001")
 
         maker.add_user(butter)
+        maker.add_payment_method(cash)
+        maker.add_payment_method(qr)
 
         print("✅ Init Success")
         return maker

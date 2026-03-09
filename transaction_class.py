@@ -24,12 +24,30 @@ class Invoice:
     @property
     def get_id(self): return self.__invoice_id
 
+    @property
+    def get_user(self): return self.__user
+
+    @property
+    def get_invoice_type(self):
+        return self.__invoice_type
+
+    @property
+    def get_detail(self):
+        return self.__detail
+
+    @property
+    def get_cost(self): return self.__cost
+
 class Receipt:
     __id_counter = count(1)
 
-    def __init__(self, invoice, payment_method):
+    def __init__(self, user, invoice_type, detail, cost, change, payment_method):
         self.__receipt_id = f'REC-{next(self.__id_counter):04d}'
-        self.__invoice = invoice
+        self.__user = user
+        self.__invoice_type = invoice_type
+        self.__detail = detail
+        self.__cost = cost
+        self.__change = change
         self.__payment_method = payment_method
 
 class LineItem:

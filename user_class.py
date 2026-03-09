@@ -54,6 +54,11 @@ class User:
     def add_receipt(self, receipt): self.__receipt_list.append(receipt)
     def add_notification(self, notification): self.__notification_list.append(notification)
 
+    def search_invoice_by_id(self, inv_id):
+        for inv in self.__invoice_list:
+            if inv.get_id == inv_id: return inv
+        return None
+
     def check_blacklist(self): return self.__is_blacklist
 
     def update_role(self, role: UserRole): self.__role = role
@@ -68,6 +73,13 @@ class User:
         inv = Invoice(self, invoice_type, detail, cost)
         self.add_invoice(inv)
         return inv
+    
+    def create_receipt(self, inv, change, method):
+        from transaction_class import Receipt
+        rec = Receipt(inv.get_user, inv.get_invoice_type, inv.get_detail, inv.get_cost, change, type(method))
+        self.add_receipt(rec)
+        del_inv = self.search_invoice_by_id(inv.get_id)
+        self.__invoice_list.remove(del_inv)
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):
