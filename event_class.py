@@ -1,5 +1,6 @@
 from itertools import count
 from datetime import datetime, timedelta
+from enum_class import EventStatus
 
 class Event:
     __id_counter = count(1)
@@ -15,6 +16,7 @@ class Event:
         self.__max_attender = max_attender
         self.__join_fee = join_fee
         self.__certified_topic = certified_topic
+        self.__status = EventStatus.SCHEDULED
 
 class Certification:
     def __init__(self, owner, event, certified_topic):

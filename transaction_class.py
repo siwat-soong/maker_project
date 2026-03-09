@@ -20,6 +20,9 @@ class Invoice:
         self.__invoice_type = invoice_type
         self.__detail = detail
         self.__cost = cost
+    
+    @property
+    def get_id(self): return self.__invoice_id
 
 class Receipt:
     __id_counter = count(1)

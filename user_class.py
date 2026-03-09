@@ -2,8 +2,6 @@ from enum_class import UserRole
 from datetime import datetime, timedelta
 
 class User:
-    MEMBER_FEE = 100
-
     def __init__(self, user_id, name, tel):
         # Basic Info
         self.__user_id = user_id
@@ -11,7 +9,6 @@ class User:
         self.__tel = self.__validate_input_tel(tel)
         self.__role = UserRole.GUEST
         self.__expired_date = datetime.now() + timedelta(days=1)
-        self.__monthly_quota = 0
         self.__max_reserve_days = 1
         self.__is_blacklist = False
 
@@ -32,6 +29,23 @@ class User:
         if len(tel) != 10: raise ValueError("Telephone Number must have 10 digits")
         if tel[0] != "0": raise ValueError("Telephone Number must start with 0")
         return tel
+    
+    @property
+    def get_id(self): return self.__user_id
+    
+    @property
+    def get_name(self): return self.__name
+
+    def show_info(self): 
+        return {
+            "UID": self.__user_id,
+            "NAME": self.__name,
+            "TEL": self.__tel,
+            "ROLE": self.__role,
+            "EXPIRED-DATE": self.__expired_date,
+            "MAX-RESERVE-DAYS": self.__max_reserve_days,
+            "BLACKLIST": self.__is_blacklist
+        }
 
     def add_certificate(self, certificate): self.__certificate_list.append(certificate)
     def add_reservation(self, reservation): self.__reservation_list.append(reservation)
@@ -43,6 +57,17 @@ class User:
     def check_blacklist(self): return self.__is_blacklist
 
     def update_role(self, role: UserRole): self.__role = role
+
+    def subscribe(self):
+        self.__role = UserRole.MEMBER
+        self.__expired_date = datetime.now() + timedelta(days=365)
+        self.__max_reserve_days = 14
+    
+    def create_invoice(self, invoice_type, detail, cost):
+        from transaction_class import Invoice
+        inv = Invoice(self, invoice_type, detail, cost)
+        self.add_invoice(inv)
+        return inv
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee):

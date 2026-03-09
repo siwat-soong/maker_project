@@ -30,3 +30,15 @@ class ReserveStatus(Enum):
     CHECKED_IN = "CHECKED_IN"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+class EventStatus(Enum):
+    SCHEDULED = "SCHEDULED"
+    OPEN = "OPEN"
+    FULL = "FULL"
+    CLOSED = "CLOSED"
+
+class InvoiceType(Enum):
+    RESOURCE = "RESOURCE"
+    EVENT = "EVENT"
+    SUBSCRIBE = "SUBSCRIBE"
+    FEE = "FEE"
