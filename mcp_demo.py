@@ -5,12 +5,6 @@ mcp = FastMCP("maker_club_mcp")
 
 BASE = "http://127.0.0.1:8000"
 
-
-@mcp.tool()
-def ping() -> dict:
-    return requests.get(f"{BASE}/").json()
-
-
 @mcp.tool()
 def show_user_info(user_id: str) -> dict:
     return requests.get(f"{BASE}/user_info", params={"user_id": user_id}).json()

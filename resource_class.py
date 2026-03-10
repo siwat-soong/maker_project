@@ -88,8 +88,6 @@ class Space(Resource):
         return True
 
     def check_expertise(self, user_expertise):
-        for eq in self.__equipment_in_space:
-            if not eq.check_expertise(user_expertise): return False
         return True
     
     def check_schedule(self, start_time: datetime, end_time: datetime): 
