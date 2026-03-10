@@ -26,6 +26,10 @@ class Event:
     def get_instructor(self): return self.__instructor
 
     @property
+    def get_attendants(self):
+        return self.__attendants
+    
+    @property
     def get_all_attendants(self): return self.__attendants
 
     def search_attendant_by_id(self, user_id):
@@ -41,10 +45,11 @@ class Event:
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
         if user in self.__attendants: return False
         return True
+    
     def check_attender(self, user_id):
         for atd in self.__attendants:
-            if atd.get_id == user_id: return False
-        return True
+            if atd.get_id == user_id: return True
+        return False
     
     def calculate_fee(self, user):
         return self.__join_fee * (1 - user.get_discount)
