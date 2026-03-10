@@ -330,9 +330,11 @@ def show_event_attenders(instructor_id,event_id):
     try:
         instructor = sys.search_instructor_by_id(instructor_id)
         if not instructor : raise Exception
-        event = sys.search_event_by_id(eve)
+        event = sys.search_event_by_id(event_id)
+        if not event : raise Exception
+        if not (event.get_instructor != instructor): raise Exception
     except :
-        return "Show_event_attenders"
+        return "Show Event Attenders Fail !"
 
 # Running Section
 def run_api():
