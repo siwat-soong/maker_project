@@ -12,7 +12,11 @@ def show_user_info(user_id: str) -> dict:
 
 @mcp.tool()
 def show_notifications(user_id: str) -> dict:
-    return requests.get(f"{BASE}/notifications", params={"user_id": user_id}).json()
+    result = requests.get(f"{BASE}/notifications", params={"user_id": user_id}).json()
+    # wrap list ให้เป็น dict
+    if isinstance(result, list):
+        return {"notifications": result}
+    return result
 
 
 @mcp.tool()
