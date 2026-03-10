@@ -39,10 +39,14 @@ class Resource:
         return res
     
     def process_reserve(self, amount, time):
-        pass
+        self.__schedule.append(time)
+        self.update_status(ResourceStatus.IN_USE)
 
     def cancel_reserve(self, time):
-        pass
+        if time in self.__schedule:
+            self.__schedule.remove(time)
+        if not self.__schedule:
+            self.update_status(ResourceStatus.AVAILABLE)
 
     def show_info(self):
         return {
