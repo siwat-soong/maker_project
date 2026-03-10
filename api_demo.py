@@ -137,232 +137,78 @@ def reserve(user_id):
         return '⛔ Reserve Failed'
 
 # http://127.0.0.1:8000/event/create?admin_id=3308&topic=""&detail=""&start_time=20/03/2026,10:00&end_time=20/03/2026,16:00&instructor_id=4244&space_id=SPA-MEET-001&max_attender=10&join_fee=0
-# @app.post("/event/create")
-# def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, space_id, max_attender, join_fee: float):
-#     # try:
-#         adm = sys.search_admin_by_id(admin_id)
-#         if not adm: raise Exception("You aren't admin")
-
-#         ins = sys.search_instructor_by_id(instructor_id)
-#         if not ins: raise Exception("Instructor not found")
-
-#         sp = sys.search_space_by_id(space_id)
-#         if not sp: raise Exception("Space not found")
-#         start_time = datetime.strptime(start_time, "%d/%m/%Y,%H:%M")
-#         end_time = datetime.strptime(end_time, "%d/%m/%Y,%H:%M")
-
-#         if start_time >= end_time: raise Exception("Invalid time range")
-
-#         if not ins.check_schedule(start_time, end_time): raise Exception("Instructor is not available")
-#         if not sp.check_schedule(start_time, end_time): raise Exception("Space is not available")
-
-#         from transaction_class import TimeRange
-#         from event_class import Event
-#         t = TimeRange(start_time, end_time)
-#         sp.process_reserve(1, t)
-
-#         sys.add_event(Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise))
-
-#         return '✅ Create Event Success'
-#     # except:
-#     #     return '⛔ Create Event Failed'
 @app.post("/event/create")
-def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, space_id, max_attender: int, join_fee: float):
+def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, space_id, max_attender, join_fee: float):
     try:
         adm = sys.search_admin_by_id(admin_id)
-        if not adm: return {"status": "error", "message": "You aren't admin"}
+        if not adm: raise Exception
 
         ins = sys.search_instructor_by_id(instructor_id)
-        if not ins: return {"status": "error", "message": "Instructor not found"}
-
+        if not ins: raise Exception
         sp = sys.search_space_by_id(space_id)
-        if not sp: return {"status": "error", "message": "Space not found"}
+        if not sp: raise Exception
+        start_time = datetime.strptime(start_time, "%d/%m/%Y,%H:%M")
+        end_time = datetime.strptime(end_time, "%d/%m/%Y,%H:%M")
 
-        # แปลงเวลา
-        start_dt = datetime.strptime(start_time, "%d/%m/%Y,%H:%M")
-        end_dt = datetime.strptime(end_time, "%d/%m/%Y,%H:%M")
+        if start_time >= end_time: raise Exception
 
-        if start_dt >= end_dt: return {"status": "error", "message": "Invalid time range"}
-
-        # เช็คตารางสอนและตารางใช้ห้อง
-        if not ins.check_schedule(start_dt, end_dt): 
-            return {"status": "error", "message": "Instructor is busy at this time"}
-        
-        # เช็คว่าห้องว่างพอสำหรับ 1 ที่ (การจัด Event) ในช่วงเวลานั้นไหม
-        if not sp.check_reservable(start_dt, end_dt, 1): 
-            return {"status": "error", "message": "Space is not available"}
+        if not ins.check_schedule(start_time, end_time): raise Exception
+        if not sp.check_schedule(start_time, end_time): raise Exception
 
         from transaction_class import TimeRange
         from event_class import Event
-        
-        t_range = TimeRange(start_dt, end_dt)
-        
-        # ทำการจองห้องไว้สำหรับ Event นี้
-        sp.process_reserve(1, t_range)
+        t = TimeRange(start_time, end_time)
+        sp.process_reserve(1, t)
 
-        # คำนวณราคาสุทธิ (ค่าเข้า + ค่าตัว Instructor)
-        total_event_fee = float(join_fee) + ins.get_fee
+        sys.add_event(Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise))
 
-        new_event = Event(
-            topic, detail, t_range, ins, sp, 
-            None, int(max_attender), total_event_fee, ins.get_expertise
-        )
-        sys.add_event(new_event)
+        return '✅ Create Event Success'
+    except:
+        return '⛔ Create Event Failed'
 
-        return {"status": "success", "message": f"Event created with ID: {new_event.get_id}"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
     
-# @app.post("/event/join")
-# def join_event(user_id, event_id):
-#     # try:
-#         user = sys.search_user_by_id(user_id)
-#         if not user: raise Exception("You aren't user")
-
-#         event = sys.search_event_by_id(event_id)
-#         if not event: raise Exception("Event not found")
-
-#         if user.check_blacklist(): raise Exception("You are on the blacklist")  
-#         if user.check_invoice(): raise Exception    ("You have unpaid invoice")
-#         if not event.check_joinable(user): raise Exception ("You can't join this event")
-
-#         fee = event.calculate_fee(user)
-
-#         event.join(user)
-
-#         user.create_invoice(InvoiceType.EVENT, f'You has joined event {event.get_id}', fee)
-
-#         return f'✅ Join Event Success, fee = {fee}$'
-
-#     # except:
-#     #     return '⛔ Join Event Failed'
-
 @app.post("/event/join")
 def join_event(user_id, event_id):
     try:
         user = sys.search_user_by_id(user_id)
-        if not user: return {"status": "error", "message": "User not found"}
+        if not user: raise Exception
 
-        event = sys.search_event_by_id(event_id)
-        if not event: return {"status": "error", "message": "Event not found"}
-
-        # 1. เช็คสิทธิ์พื้นฐาน
-        if user.check_blacklist(): return {"status": "error", "message": "User is blacklisted"}
-        if user.check_invoice(): return {"status": "error", "message": "Please pay your pending invoices first"}
-
-        # 2. เช็คว่าเคยเข้าร่วมไปแล้วหรือยัง
-        if event.check_attender(user_id):
-            return {"status": "error", "message": "You have already joined this event"}
-
-        # 3. เช็คว่า Event ยังรับเพิ่มได้ไหม (เช็ค Joinable และจำนวนคน)
-        if not event.check_joinable(user): 
-            return {"status": "error", "message": "Cannot join: Event is full or closed"}
-
-        # 4. คำนวณค่าธรรมเนียม (อาจมีส่วนลดตามสมาชิกภาพ)
-        fee = event.calculate_fee(user)
-
-        # 5. เพิ่มชื่อเข้า Event
-        event.join(user)
-
-        # 6. สร้างใบแจ้งหนี้
-        inv = user.create_invoice(InvoiceType.EVENT, f"Join Event: {event.get_topic()}", fee)
-
-        return {
-            "status": "success", 
-            "message": f"Join Success. Please pay {fee}$",
-            "invoice_id": inv.get_id
-        }
-
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-# from enum_class import EventStatus
-# from event_class import Certification
-# @app.get("/events/close")
-# def close_event(self, instructor_id: str, event_id: str, ):
-#         instructor = next((i for i in self.__instructor_list if i.get_id == instructor_id), None)
-#         if not instructor:
-#             return {"error": "Instructor not found"}
-
-#         target_event = self.search_event_by_id(event_id)
-#         if not target_event:
-#             return {"error": "Event not found"}
-
-#         if target_event._Event__status == EventStatus.CLOSED:
-#             return {"error": "Event is already closed"}
-
-#         attenders = target_event._Event__attenders
-#         if not attenders:
-#             return {"error": "No attenders in this event"}
-
-#         target_event._Event__status = EventStatus.CLOSED
-#         certified_topic = target_event._Event__certified_topic
-
-#         now = datetime.now()
-#         expired_date = now + timedelta(days=expired_days) if expired_days else None
-#         issued = []
-
-#         for user in attenders:
-#             try:
-#                 cert = Certification(user, target_event, certified_topic, now, expired_date)
-#                 user.add_certificate(cert)
-#                 issued.append(user.get_id)
-#             except Exception as e:
-#                 issued.append(f"{user.get_id} (failed: {e})")
-@app.post("/event/certificate")
-def add_certificate(instructor_id: str, event_id: str, user_id: str, score: float):
-    try:
-        ins = sys.search_instructor_by_id(instructor_id)
-        if not ins: raise Exception("You aren't instructor")
-        
         event = sys.search_event_by_id(event_id)
         if not event: raise Exception("Event not found")
-        
+
+        if user.check_blacklist(): raise Exception 
+        if user.check_invoice(): raise Exception
+        if not event.check_joinable(user): raise Exception
+
+        fee = event.calculate_fee(user)
+
+        event.join(user)
+
+        user.create_invoice(InvoiceType.EVENT, f'You has joined event {event.get_id}', fee)
+
+        return f'✅ Join Event Success, fee = {fee}$'
+
+    except:
+        return '⛔ Join Event Failed'
+
+@app.post("/event/certificate")
+def add_certificate(instructor_id, event_id, user_id, score: float):
+    try:
+        ins = sys.search_instructor_by_id(instructor_id)
+        if not ins: raise Exception ("You aren't instructor")
+        event = sys.search_event_by_id(event_id)
+        if not event: raise Exception ("Event not found")
         attendant = sys.search_user_by_id(user_id)
-        if not attendant: raise Exception("User not found")
-        
-        # ⚠️ ข้อควรระวัง: เช็คว่า get_instructor เป็นตัวแปร หรือ Method 
-        # ถ้าเป็น Method ใน Class ต้องมีวงเล็บ -> event.get_instructor().get_id()
-        if event.get_instructor.get_id != instructor_id: 
-            raise Exception("You aren't instructor of this event")
-            
-        if not event.search_attendant_by_id(user_id): 
-            raise Exception("This user isn't attendant of this event")
-            
-        if score >= 50: 
-            grade = "PASS"
-        else: 
-            grade = "FAIL"
-            
+        if not attendant: raise Exception ("User not found")
+        if not event.get_instructor.get_id == instructor_id: raise Exception ("You aren't instructor of this event")
+        if not event.search_attendant_by_id(user_id): raise Exception ("This user isn't attendant of this event")
+        if score >= 50: grade = "PASS"
+        else: grade = "FAIL"
         from event_class import Certification
-        
-        # ⚠️ ข้อควรระวังเหมือนกัน: get_certified_topic อาจจะต้องมีวงเล็บ ()
-        cert = Certification(attendant, event, event.get_certified_topic, grade)
-        attendant.add_certificate(cert)
-        
-        return {"status": "success", "message": "add certificate success"}
-        
-    except Exception as e:
-        # พิมพ์ Error ออกทางหน้า Swagger UI ให้เห็นชัดๆ
-        return {"status": "error", "message": str(e)}
-# @app.post("/event/certificate")
-# def add_certificate(instructor_id, event_id, user_id, score: float):
-#     # try:
-#         ins = sys.search_instructor_by_id(instructor_id)
-#         if not ins: raise Exception ("You aren't instructor")
-#         event = sys.search_event_by_id(event_id)
-#         if not event: raise Exception ("Event not found")
-#         attendant = sys.search_user_by_id(user_id)
-#         if not attendant: raise Exception ("User not found")
-#         if not event.get_instructor.get_id == instructor_id: raise Exception ("You aren't instructor of this event")
-#         if not event.search_attendant_by_id(user_id): raise Exception ("This user isn't attendant of this event")
-#         if score >= 50: grade = "PASS"
-#         else: grade = "FAIL"
-#         from event_class import Certification
-#         attendant.add_certificate(Certification(attendant, event, event.get_certified_topic, grade))
-#         return "add certificate success"
-#     # except:
-#     #     return "add certificate failed"
+        attendant.add_certificate(Certification(attendant, event, event.get_certified_topic, grade))
+        return "add certificate success"
+    except:
+        return "add certificate failed"
 
 @app.put("/event/add")
 def add_equipment_to_event(user_id, event_id):
