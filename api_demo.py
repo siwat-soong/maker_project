@@ -8,8 +8,6 @@ sys = system_init()
 
 app = FastAPI()
 
-
-
 @app.get("/")
 def ping():
     return {
@@ -72,7 +70,7 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount: float):
         res = sys.search_resource_by_id(item_id)
         if not res: raise Exception
 
-        # Check User Rights
+                           
         if mode != "COMPANY":
             if target_user.check_blacklist(): raise Exception
             adv_res_dur = start_time - datetime.now()
@@ -81,7 +79,7 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount: float):
             
         if target_user.check_duplicate_cart(res, start_time, end_time): raise Exception
 
-        # Check Resource Availability
+                                     
         if not res.check_reservable(start_time, end_time, amount): raise Exception
 
         target_user.add_to_cart(res, amount, start_time, end_time)
@@ -115,20 +113,20 @@ def reserve(user_id):
             if isinstance(lit.get_resource, Material): purchase_list.append(lit)
             else: reserve_list.append(lit)
 
-        # make reservation
+                          
         from transaction_class import Reservation
         user.add_reservation(Reservation(user, reserve_list))
 
         total = 0
         if purchase_list:
-            # loop calculate total cost
+                                       
             for item in purchase_list:
                 total += item.get_resource.calculate_fee(user, item.get_amount, None)
 
-            # make invoice
+                          
             user.create_invoice(InvoiceType.RESOURCE, "Purchased Material", total)
 
-        # clear line item
+                         
         user.clear_line_item()
 
         return f'✅ Reserve Done, total cost {total}$'
@@ -136,7 +134,7 @@ def reserve(user_id):
     except:
         return '⛔ Reserve Failed'
 
-# http://127.0.0.1:8000/event/create?admin_id=3308&topic=""&detail=""&start_time=20/03/2026,10:00&end_time=20/03/2026,16:00&instructor_id=4244&space_id=SPA-MEET-001&max_attender=10&join_fee=0
+                                                                                                                                                                                               
 @app.post("/event/create")
 def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, space_id, max_attender, join_fee: float):
     try:
@@ -259,7 +257,7 @@ def check_in(user_id, rsv_id, space_id, start_time):
             space.update_status(ResourceStatus.IN_USE)
             lit.update_status(LineItemStatus.CHECKED_IN)
 
-            # Check in update status in other 
+                                              
 
             lit.set_start_time = now
 
@@ -287,7 +285,7 @@ def check_out(user_id, rsv_id, space_id, start_time):
 
         lit.set_end_time = datetime.now()
 
-        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
+        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
 
         lit.update_status(LineItemStatus.COMPLETED)
 
@@ -317,7 +315,7 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
 
         lit.set_end_time = datetime.now()
 
-        fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
+        fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
 
         lit.update_status(LineItemStatus.COMPLETED)
 
@@ -325,8 +323,7 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
 
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
-
-# Running Section
+                 
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)
 

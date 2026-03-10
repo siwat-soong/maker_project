@@ -19,7 +19,10 @@ class Resource:
 
     def calculate_fee(self, user, amount, duration): pass
 
-    def validate_access(self, user, amount, start_time, end_time, line_item_list): pass
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if user.check_blacklist(): return False
+        if user.check_invoice(): return False
+        return True
 
     def check_expertise(self, user_expertise): return True
     def check_schedule(self, start_time: datetime, end_time: datetime): return True
@@ -66,7 +69,14 @@ class Space(Resource):
             total = hours * self.COWORK_GUEST_RATE_PER_HR
         return round(total, 2)
 
-    def validate_access(self, user, amount, start_time, end_time, line_item_list): pass
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if not self.check_available(): return False
+        if amount > self.__capacity: return False
+        adv_days = (start_time - datetime.now()).days
+        if adv_days > user.get_max_reserve_days: return False
+        if not user.check_expertise(self): return False
+        return True
 
     def check_expertise(self, user_expertise):
         for eq in self.__equipment_in_space:
@@ -101,7 +111,13 @@ class Equipment(Resource):
 
     def calculate_fee(self, user, amount, duration): pass
 
-    def validate_access(self, user, amount, start_time, end_time, line_item_list): pass
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if not self.check_available(): return False
+        if not user.check_expertise(self): return False
+        adv_days = (start_time - datetime.now()).days
+        if adv_days > user.get_max_reserve_days: return False
+        return True
 
     def check_expertise(self, user_expertise): return self.__required_cert is None or user_expertise == self.__required_cert
 
@@ -135,6 +151,11 @@ class ThreeDPrinter(Equipment):
             surcharge    = 0
         return round(machine_fee + material_fee + surcharge, 2)
 
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if self.__current_filament.check_reservable(None, None, amount): return True
+        return False
+
 class LaserCutter(Equipment):
     RATE_MEMBER = 5.0
     RATE_GUEST  = 10.0
@@ -150,6 +171,13 @@ class LaserCutter(Equipment):
         machine_fee  = duration * rate
         material_fee = amount * self.__current_material.COST_PER_UNIT
         return round(machine_fee + material_fee, 2)
+
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        diff = (end_time - start_time).total_seconds() / 60
+        if diff < 15: return False
+        if self.__current_material.check_reservable(None, None, amount): return True
+        return False
 
     def check_reservable(self, start_time, end_time, amount):
         if not (self.get_status == ResourceStatus.AVAILABLE): return False
@@ -171,6 +199,11 @@ class ToolSet(Equipment):
         total = hours * self.RATE_PER_HR_PER_TOOL * amount * (1 - user.get_discount)
         return round(total, 2)
 
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if amount > self.__tool_count: return False
+        return True
+
 class Material(Resource):
     COST_PER_UNIT = 0
     def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine: EquipmentType):
@@ -187,7 +220,10 @@ class Material(Resource):
         total = amount * self.COST_PER_UNIT * (1 - user.get_discount)
         return total
 
-    def validate_access(self, user, amount, start_time, end_time, line_item_list): pass
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if self.__stock_qty - amount < 0: return False
+        return True
 
     def check_reservable(self, start_time, end_time, amount):
         if not (self.get_status == ResourceStatus.AVAILABLE): return False
