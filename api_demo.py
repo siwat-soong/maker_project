@@ -239,7 +239,7 @@ def check_in(user_id, rsv_id, space_id, start_time):
         if user.check_invoice(): raise Exception
         if not space.check_available(): raise Exception
 
-        now = datetime.now() + timedelta(hours=8)
+        now = datetime.now()
         diff_mins = (start_time - now).total_seconds() / 60
         if diff_mins > 15: raise Exception
         elif diff_mins < -15:
@@ -260,10 +260,70 @@ def check_in(user_id, rsv_id, space_id, start_time):
 
             # Check in update status in other 
 
-            lit.set_actual_start_time(now)
+            lit.set_start_time = now
 
         return '✅ Check In Success'
     except: return '⛔ Check In Failed'
+
+@app.post("/checkout")
+def check_out(user_id, rsv_id, space_id, start_time):
+    from enum_class import LineItemStatus
+    try:
+        start_time = datetime.strptime(start_time, "%d/%m/%Y,%H:%M")
+
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+
+        rsv = user.search_reservation_by_id(rsv_id)
+        if not rsv: raise Exception
+
+        space = sys.search_space_by_id(space_id)
+        lit = rsv.search_item_list(space, start_time)
+        if not lit: raise Exception
+
+        if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
+
+        lit.set_end_time = datetime.now()
+
+        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
+
+        lit.update_status(LineItemStatus.COMPLETED)
+
+        user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
+
+        return f'✅ Check Out Success, cost = {fee}$'
+    except: return '⛔ Check Out Failed'
+
+@app.post("/return_eq")
+def return_eq(user_id, rsv_id, equipment_id, start_time):
+    from enum_class import LineItemStatus
+    try:
+        start_time = datetime.strptime(start_time, "%d/%m/%Y,%H:%M")
+
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+
+        rsv = user.search_reservation_by_id(rsv_id)
+        if not rsv: raise Exception
+
+        eq = sys.search_equipment_by_id(equipment_id)
+        lit = rsv.search_item_list(eq, start_time)
+        if not lit: raise Exception
+
+        if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
+
+        lit.set_end_time = datetime.now()
+
+        fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
+
+        lit.update_status(LineItemStatus.COMPLETED)
+
+        user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
+
+        return f'✅ Return Success, cost = {fee}$'
+    except: return '⛔ Return Failed'
 
 # Running Section
 def run_api():

@@ -101,9 +101,9 @@ def system_init():
         cash = Cash("C-0001", 3000)
         qr = QRCode("Q-0001")
 
-        lab_a = Space("SPA-LAB-001", SpaceType.LABORATORY, 30, time(10, 0), time(22, 0))
-        desk_a = Space("SPA-DESK-001", SpaceType.HOT_DESK, 4, time(10, 0), time(22, 0))
-        meet_a = Space("SPA-MEET-001", SpaceType.MEETING_ROOM, 10, time(10, 0), time(22, 0))
+        lab_a = Space("SPA-LAB-001", SpaceType.LABORATORY, 30, time(6, 0), time(22, 0))
+        desk_a = Space("SPA-DESK-001", SpaceType.HOT_DESK, 4, time(6, 0), time(22, 0))
+        meet_a = Space("SPA-MEET-001", SpaceType.MEETING_ROOM, 10, time(6, 0), time(22, 0))
 
         filament_a = Filament("MAT-PLA-001", 1000, "grams", 0, "PLA", 1.75, "RED")
         acrylic_a = Acrylic("MAT-ACR-001", 20, "sheets", 1, 5, "20x20", "CLEAR")

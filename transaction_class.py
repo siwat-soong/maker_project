@@ -94,6 +94,14 @@ class TimeRange:
 
     @property
     def get_end_time(self): return self.__end_time
+    @get_end_time.setter
+    def set_end_time(self, end_time): self.__end_time = end_time
+
+
+    def get_duration(self):
+        diff = self.__end_time - self.__start_time
+        duration_mins = diff.total_seconds() / 60
+        return duration_mins
     
     def check_overlap(self, start_time, end_time):
         return self.__start_time < end_time and start_time < self.__end_time

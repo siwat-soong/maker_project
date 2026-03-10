@@ -51,7 +51,7 @@ class Space(Resource):
     
     def assign_eq(self, eq): self.__equipment_in_space.append(eq)
     
-    def calculate_fee(self, user, amount, duration): pass
+    def calculate_fee(self, user, amount, duration): return 0
 
     def validate_access(self, user, amount, start_time, end_time, line_item_list): pass
 
