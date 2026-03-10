@@ -45,7 +45,7 @@ class Event:
         if user in self.__attendants: return False
         if len(self.__attendants) >= float(self.__max_attender): return False
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
-        return True
+        return False
 
     def calculate_fee(self, user):
         return round(self.__join_fee * (1 - user.get_discount), 2)
