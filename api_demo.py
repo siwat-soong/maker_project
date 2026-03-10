@@ -333,15 +333,15 @@ def show_available_resource():
 
         for space in sys.get_space_list:
             if space.get_status == ResourceStatus.AVAILABLE:
-                available_resource.append(space.show_detail())
+                available_resource.append(space.show_info())
 
         for equipment in sys.get_equipment_list:
             if equipment.get_status == ResourceStatus.AVAILABLE:
-                available_resource.append(equipment.show_detail())
+                available_resource.append(equipment.show_info())
 
         for material in sys.get_material_list:
             if material.get_status == ResourceStatus.AVAILABLE:
-                available_resource.append(material.show_detail())
+                available_resource.append(material.show_info())
 
         return {"message": "Show Available Resource Complete", "data": available_resource}
     except Exception as e:

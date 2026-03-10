@@ -39,7 +39,7 @@ class Resource:
     def process_reserve(self, amount, time):
         pass
 
-    def show_detail(self):
+    def show_info(self):
         return {
             "resource_id": self.get_id,
             "status": self.get_status.value
@@ -85,7 +85,7 @@ class Space(Resource):
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
 
-    def show_detail(self):
+    def show_info(self):
         return {
             "resource_id": self.get_id,
             "status": self.get_status.value,
@@ -118,7 +118,7 @@ class Equipment(Resource):
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
 
-    def show_detail(self):
+    def show_info(self):
         return {
             "resource_id": self.get_id,
             "status": self.get_status.value,
@@ -183,7 +183,7 @@ class Material(Resource):
         if self.__stock_qty - amount < 0: return False
 
         return True
-    def show_detail(self):
+    def show_info(self):
         return {
             "resource_id": self.get_id,
             "status": self.get_status.value,
