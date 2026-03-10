@@ -8,7 +8,7 @@ class User:
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
         self.__role = UserRole.GUEST
-        self.__expired_date = datetime.now() + timedelta(days=1)
+        self.__expired_date = datetime.now()
         self.__max_reserve_days = 1
         self.__is_blacklist = False
         self.__discount = 0

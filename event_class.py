@@ -5,7 +5,7 @@ from enum_class import EventStatus
 class Event:
     __id_counter = count(1)
 
-    def __init__(self, topic, detail, time, instructor, space, item_list, max_attender: float, join_fee: float, certified_topic):
+    def __init__(self, topic, detail, time, instructor, space, item_list, max_attender: str, join_fee: float, certified_topic):
         self.__event_id = f'WS-{next(self.__id_counter):04d}'
         self.__topic = topic
         self.__detail = detail
