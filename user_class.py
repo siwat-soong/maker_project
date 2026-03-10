@@ -59,7 +59,7 @@ class User:
             "MAX-RESERVE-DAYS": self.__max_reserve_days,
             "BLACKLIST": self.__is_blacklist
         }
-    
+
     def show_notification(self):
         return [
             {

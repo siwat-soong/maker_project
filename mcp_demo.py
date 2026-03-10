@@ -120,5 +120,32 @@ def cancel_reserve(user_id: str, rsv_id: str) -> dict:
         "rsv_id": rsv_id
     }).json()
 
+@mcp.tool()
+def add_certificate(instructor_id: str, event_id: str, user_id: str, score: float) -> dict:
+    return requests.post(f"{BASE}/event/certificate", params={
+        "instructor_id": instructor_id,
+        "event_id": event_id,
+        "user_id": user_id,
+        "score": score
+    }).json()
+
+
+@mcp.tool()
+def show_event_attenders(instructor_id: str, event_id: str) -> dict:
+    return requests.post(f"{BASE}/show_event_attenders", params={
+        "instructor_id": instructor_id,
+        "event_id": event_id
+    }).json()
+
+
+@mcp.tool()
+def show_available_resource() -> dict:
+    return requests.get(f"{BASE}/show_available_resource").json()
+
+
+@mcp.tool()
+def show_all_resource() -> dict:
+    return requests.get(f"{BASE}/show_all_resource").json()
+
 if __name__ == "__main__":
     mcp.run()

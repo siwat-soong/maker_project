@@ -80,17 +80,24 @@ class Club:
         return None
 
     def search_resource_by_id(self, resource_id):
-        res = None
-
         res = self.search_space_by_id(resource_id)
         if res is not None: return res
-
         res = self.search_equipment_by_id(resource_id)
         if res is not None: return res
-
         res = self.search_material_by_id(resource_id)
         if res is not None: return res
 
+    # List Properties
+    @property
+    def get_space_list(self): return self.__space_list
+
+    @property
+    def get_equipment_list(self): return self.__equipment_list
+
+    @property
+    def get_material_list(self): return self.__material_list
+
+    # Notification Methods
     def notify(self, user, topic, detail):
         from transaction_class import Notification
         user.add_notification(Notification(user, topic, detail))

@@ -18,7 +18,7 @@ class Reservation:
         for item in self.__item_list:
             if item.get_resource == res and item.get_reserved_time.get_start_time == start_time: return item
         return None
-    
+
     def cancel(self, cancel_time=None):
         if self.__status != ReserveStatus.CONFIRMED: return None
         cancel_time = cancel_time or datetime.now()
@@ -47,12 +47,10 @@ class Invoice:
     def get_user(self): return self.__user
 
     @property
-    def get_invoice_type(self):
-        return self.__invoice_type
+    def get_invoice_type(self): return self.__invoice_type
 
     @property
-    def get_detail(self):
-        return self.__detail
+    def get_detail(self): return self.__detail
 
     @property
     def get_cost(self): return self.__cost
@@ -117,7 +115,6 @@ class TimeRange:
     def get_end_time(self): return self.__end_time
     @get_end_time.setter
     def set_end_time(self, end_time): self.__end_time = end_time
-
 
     def get_duration(self):
         diff = self.__end_time - self.__start_time

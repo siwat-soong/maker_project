@@ -44,6 +44,12 @@ class Resource:
     def cancel_reserve(self, time):
         pass
 
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value
+        }
+
 class Space(Resource):
     COWORK_GUEST_RATE_PER_HR  = 50
     COWORK_MEMBER_FREE_HR     = 2
@@ -109,6 +115,15 @@ class Space(Resource):
             if not self.__schedule:
                 self.update_status(ResourceStatus.AVAILABLE)
 
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "space_type": self.__space_type.value,
+            "capacity": self.__capacity,
+            "valid_time": f"{self.__valid_start_time} - {self.__valid_end_time}"
+        }
+
 class Equipment(Resource):
     def __init__(self, resource_id, eq_type, required_cert: Expertise, location: Space):
         super().__init__(resource_id)
@@ -143,6 +158,15 @@ class Equipment(Resource):
             self.__schedule.remove(time)
             if not self.__schedule:
                 self.update_status(ResourceStatus.AVAILABLE)
+
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "eq_type": self.__eq_type.value,
+            "required_cert": self.__required_cert.value if self.__required_cert else None,
+            "location": self.__location.get_id
+        }
 
 class ThreeDPrinter(Equipment):
     RATE_MEMBER = 0.5
@@ -231,7 +255,7 @@ class Material(Resource):
     def process_reserve(self, amount, time):
         self.__stock_qty -= amount
         if self.__stock_qty <= self.__minimum_stock:
-            return True  
+            return True
         return False
     
     def calculate_fee(self, user, amount, duration): 
@@ -248,6 +272,13 @@ class Material(Resource):
         if self.__stock_qty - amount < 0: return False
         return True
 
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "stock_qty": self.__stock_qty,
+            "unit_name": self.__unit_name
+        }
 
 class Filament(Material):
     COST_PER_UNIT = 2
