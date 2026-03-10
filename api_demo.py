@@ -325,6 +325,20 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
 
+@app.post("/show_all_event")
+def show_all_event(user_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: 
+            raise Exception("User not found")
+        results_event = []
+        for event in sys.event_list:
+            results_event.append(event.show_detail())
+        return {
+            "message": "Show Available Event Complete",
+            "data": results_event
+        }
+    except : return 'Show all event fail'
 # Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)

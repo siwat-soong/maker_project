@@ -40,7 +40,22 @@ class Event:
     
     def add_eq(self, ite):
         self.__item_list.extend(ite)
+    
+    def show_detail(self):
 
+        return {
+            "event_id": self.__event_id,
+            "status": self.__status.value if hasattr(self.__status, 'value') else self.__status,
+            "event_topic": self.__topic,       
+            "event_detail": self.__detail,     
+            "time": str(self.__time),
+            "instructor": self.__instructor.get_id if hasattr(self.__instructor, 'get_id') else str(self.__instructor),
+            "location": self.__space.get_id if hasattr(self.__space, 'get_id') else str(self.__space),
+            "attenders_status": f"{len(self.__attendants)}/{self.__max_attender}", 
+            "join_fee": self.__join_fee,
+            "certified_topic": self.__certified_topic.value if hasattr(self.__certified_topic, 'value') else self.__certified_topic
+        }
+    
 class Certification:
     def __init__(self, owner, event, certified_topic):
         self.__owner = owner
