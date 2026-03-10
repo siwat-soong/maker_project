@@ -15,9 +15,21 @@ def ping():
         "message": "pong"
     }
 
+@app.get("/notifications")
+def show_notifications(user_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+        return user.show_notification()
+    except:
+        return "⛔ Get Notifications Failed"    
+
 @app.get("/user_info")
 def show_user_info(user_id):
     user = sys.search_user_by_id(user_id)
+    if not user: user = sys.search_instructor_by_id(user_id)
+    if not user: return "⛔ User Not Found"
     return user.show_info()
 
 @app.post("/subscribe")
@@ -30,6 +42,7 @@ def subscribe(user_id):
         else: 
             user.subscribe()
             inv = user.create_invoice(InvoiceType.SUBSCRIBE, f'{user.get_name} subscribe member from {datetime.now()} for 365 days', 100)
+            sys.notify(user, 'Subscribe', f'สมัครสมาชิกสำเร็จ กรุณาชำระค่าสมัคร 100฿ ที่ใบแจ้งหนี้ {inv.get_id}')
             return f'✅ Subscribe Success, Please pay fee 100$ to ID: {inv.get_id}'
 
     except:
@@ -44,6 +57,7 @@ def pay(user_id, inv_id, cost: float, method_id):
         if(method.validate(inv.get_cost, cost)): 
             change = method.process_payment()
             user.create_receipt(inv, change, method)
+            sys.notify(user, 'Payment', f'ชำระเงิน {inv.get_cost}฿ สำเร็จ ทอน {change}฿')
             return f'✅ Pay Success with change {change}'
         else: raise Exception
     except:
@@ -106,9 +120,10 @@ def reserve(user_id):
         if not lit_list: raise Exception
         
         for lit in lit_list:
-            if not lit.get_resource.check_reservable(lit.get_reserved_time.get_start_time, lit.get_reserved_time.get_end_time, lit.get_amount): raise Exception
-            lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
-
+            if not lit.get_resource.check_reservable(...): raise Exception
+            low_stock = lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
+            if low_stock:
+                sys.broadcast('Low Stock', f'วัสดุ {lit.get_resource.get_id} ใกล้หมดแล้ว')
             from resource_class import Material
             if isinstance(lit.get_resource, Material): purchase_list.append(lit)
             else: reserve_list.append(lit)
@@ -129,6 +144,7 @@ def reserve(user_id):
                          
         user.clear_line_item()
 
+        sys.notify(user, 'Reserve', f'จองสำเร็จ รหัสการจอง {user.get_reservation_list[-1].get_id} ค่าวัสดุ {total}฿')
         return f'✅ Reserve Done, total cost {total}$'
 
     except:
@@ -161,8 +177,9 @@ def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, s
         sp.process_reserve(1, t)
         ins.add_schedule(t)
 
-        sys.add_event(Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise))
-
+        event = Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise)
+        sys.add_event(event)
+        sys.broadcast('New Event', f'มี event ใหม่ [{event.get_id}] {topic} วันที่ {t.get_start_time.strftime("%d/%m/%Y %H:%M")} - {t.get_end_time.strftime("%H:%M")} โดย {ins.get_name}')
         return '✅ Create Event Success'
     except:
         return '⛔ Create Event Failed'
@@ -185,7 +202,7 @@ def join_event(user_id, event_id):
         event.join(user)
 
         user.create_invoice(InvoiceType.EVENT, f'You has joined event {event.get_id}', fee)
-
+        sys.notify(user, 'Join Event', f'เข้าร่วม event {event.get_id} สำเร็จ ค่าเข้าร่วม {fee}฿')
         return f'✅ Join Event Success, fee = {fee}$'
 
     except:
@@ -260,7 +277,7 @@ def check_in(user_id, rsv_id, space_id, start_time):
                                               
 
             lit.set_start_time = now
-
+            sys.notify(user, 'Check In', f'Check in {space_id} เวลา {now.strftime("%d/%m/%Y %H:%M")} สำเร็จ')
         return '✅ Check In Success'
     except: return '⛔ Check In Failed'
 
@@ -290,7 +307,7 @@ def check_out(user_id, rsv_id, space_id, start_time):
         lit.update_status(LineItemStatus.COMPLETED)
 
         user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
-
+        sys.notify(user, 'Check Out', f'Check out {space_id} สำเร็จ ค่าบริการ {fee}฿')
         return f'✅ Check Out Success, cost = {fee}$'
     except: return '⛔ Check Out Failed'
 
@@ -319,10 +336,28 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
 
         lit.update_status(LineItemStatus.COMPLETED)
 
-        user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
-
+        user.create_invoice(InvoiceType.RESOURCE, "Return Equipment", fee)
+        sys.notify(user, 'Return Equipment', f'คืน {equipment_id} สำเร็จ ค่าบริการ {fee}฿')
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
+
+@app.post("/cancel_reserve")
+def cancel_reserve(user_id, rsv_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+        rsv = user.search_reservation_by_id(rsv_id)
+        if not rsv: raise Exception
+        fee = rsv.cancel()
+        if fee is None: raise Exception
+        if fee > 0:
+            user.create_invoice(InvoiceType.FEE, f'No-show fee for {rsv_id}', fee)
+            sys.notify(user, 'Cancel Reserve', f'ยกเลิกการจอง {rsv_id} มีค่าปรับ {fee}฿')
+            return f'✅ Cancelled with no-show fee {fee}฿'
+        sys.notify(user, 'Cancel Reserve', f'ยกเลิกการจอง {rsv_id} สำเร็จ ไม่มีค่าปรับ')
+        return '✅ Cancelled, no fee'
+    except: return '⛔ Cancel Failed'
                  
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)

@@ -1,5 +1,4 @@
 from datetime import datetime, time
-
 from user_class import User, Instructor, Admin
 from payment_class import Cash, QRCode
 from resource_class import Space, ThreeDPrinter, LaserCutter, ToolSet, Filament, Acrylic, Plank
@@ -91,6 +90,17 @@ class Club:
 
         res = self.search_material_by_id(resource_id)
         if res is not None: return res
+
+    def notify(self, user, topic, detail):
+        from transaction_class import Notification
+        user.add_notification(Notification(user, topic, detail))
+
+    def broadcast(self, topic, detail):
+        from transaction_class import Notification
+        for user in self.__user_list:
+            user.add_notification(Notification(user, topic, detail))
+        for ins in self.__instructor_list:
+            ins.add_notification(Notification(ins, topic, detail))
 
 def system_init():
     try:

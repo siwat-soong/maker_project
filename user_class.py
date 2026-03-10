@@ -46,6 +46,9 @@ class User:
     @property
     def get_discount(self): return self.__discount
 
+    @property
+    def get_reservation_list(self): return self.__reservation_list
+
     def show_info(self): 
         return {
             "UID": self.__user_id,
@@ -56,6 +59,15 @@ class User:
             "MAX-RESERVE-DAYS": self.__max_reserve_days,
             "BLACKLIST": self.__is_blacklist
         }
+    
+    def show_notification(self):
+        return [
+            {
+                "topic": n.get_topic,
+                "detail": n.get_detail
+            }
+            for n in self.__notification_list
+        ]
 
     def add_certificate(self, certificate): self.__certificate_list.append(certificate)
     def add_reservation(self, reservation): self.__reservation_list.append(reservation)
@@ -117,6 +129,10 @@ class User:
         return False
 
     def clear_line_item(self): self.__line_item_list.clear()
+
+    def remove_invoice(self, inv):
+        if inv in self.__invoice_list:
+            self.__invoice_list.remove(inv)
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee: float):

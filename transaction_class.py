@@ -18,6 +18,17 @@ class Reservation:
         for item in self.__item_list:
             if item.get_resource == res and item.get_reserved_time.get_start_time == start_time: return item
         return None
+    
+    def cancel(self, cancel_time=None):
+        if self.__status != ReserveStatus.CONFIRMED: return None
+        cancel_time = cancel_time or datetime.now()
+        earliest_start = min(item.get_reserved_time.get_start_time for item in self.__item_list)
+        hours_before = (earliest_start - cancel_time).total_seconds() / 3600
+        for item in self.__item_list:
+            item.get_resource.cancel_reserve(item.get_reserved_time)
+        self.__status = ReserveStatus.CANCELLED
+        if hours_before < 4: return 50
+        return 0
 
 class Invoice:
     __id_counter = count(1)

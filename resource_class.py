@@ -41,6 +41,9 @@ class Resource:
     def process_reserve(self, amount, time):
         pass
 
+    def cancel_reserve(self, time):
+        pass
+
 class Space(Resource):
     COWORK_GUEST_RATE_PER_HR  = 50
     COWORK_MEMBER_FREE_HR     = 2
@@ -100,6 +103,12 @@ class Space(Resource):
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
 
+    def cancel_reserve(self, time):
+        if time in self.__schedule:
+            self.__schedule.remove(time)
+            if not self.__schedule:
+                self.update_status(ResourceStatus.AVAILABLE)
+
 class Equipment(Resource):
     def __init__(self, resource_id, eq_type, required_cert: Expertise, location: Space):
         super().__init__(resource_id)
@@ -128,6 +137,12 @@ class Equipment(Resource):
     
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
+
+    def cancel_reserve(self, time):
+        if time in self.__schedule:
+            self.__schedule.remove(time)
+            if not self.__schedule:
+                self.update_status(ResourceStatus.AVAILABLE)
 
 class ThreeDPrinter(Equipment):
     RATE_MEMBER = 0.5
@@ -215,6 +230,9 @@ class Material(Resource):
     
     def process_reserve(self, amount, time):
         self.__stock_qty -= amount
+        if self.__stock_qty <= self.__minimum_stock:
+            return True  
+        return False
     
     def calculate_fee(self, user, amount, duration): 
         total = amount * self.COST_PER_UNIT * (1 - user.get_discount)
