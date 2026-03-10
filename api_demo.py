@@ -178,7 +178,7 @@ def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, s
         event = Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee), ins.get_expertise)
         sys.add_event(event)
         sys.broadcast('New Event', f'มี event ใหม่ [{event.get_id}] {topic} วันที่ {t.get_start_time.strftime("%d/%m/%Y %H:%M")} - {t.get_end_time.strftime("%H:%M")} โดย {ins.get_name}')
-        return '✅ Create Event Success'
+        return f'✅ Create Event Success, Event ID: {event.get_id}'
     except:
         return '⛔ Create Event Failed'
     
