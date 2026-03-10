@@ -497,6 +497,21 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
 
+@app.post("/show_event_attenders")
+def show_event_attenders(instructor_id,event_id):
+    try:
+        instructor = sys.search_instructor_by_id(instructor_id)
+        if not instructor : raise Exception
+        event = sys.search_event_by_id(event_id)
+        if not event : raise Exception
+        if event.get_instructor != instructor: raise Exception
+        result = []
+        for attender in event.get_attendants:
+            result.append(attender.show_info())
+        return {"message": "Show Event Attenders Complete", "data": result}
+    except :
+        return "Show Event Attenders Fail !"
+
 @app.get("/events")
 def list_events(user_id: str = None):
     events = []
