@@ -346,6 +346,25 @@ def show_available_resource():
         return {"message": "Show Available Resource Complete", "data": available_resource}
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/show_all_resource")
+def show_all_resource():
+    try:
+        show_resource = []
+
+        for space in sys.get_space_list:
+            show_resource.append(space.show_info())
+
+        for equipment in sys.get_equipment_list:
+            show_resource.append(equipment.show_info())
+
+        for material in sys.get_material_list:
+            show_resource.append(material.show_info())
+
+        return {"message": "Show All Resource Complete", "data": show_resource}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 # Running Section
 def run_api():
