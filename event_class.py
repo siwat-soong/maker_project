@@ -1,93 +1,53 @@
-from enum_class import Expertise, EventStatus
-from resource_class import Space
-from datetime import datetime
+from itertools import count
+from datetime import datetime, timedelta
+from enum_class import EventStatus
 
 class Event:
-    def __init__(self, event_id, event_topic, event_detail, start_time, end_time, instructor, space, max_attender, join_fee, certified_topic):
-        from user_class import Instructor
-        self.__event_id = event_id
-        self.__event_topic = event_topic
-        self.__event_detail = event_detail
-        self.__start_time = start_time
-        self._end_time = end_time
-        self.__instructor = self.__validate_input_specific_type(instructor, Instructor)
-        self.__space = self.__validate_input_specific_type(space, Space)
-        self.__max_attender = self.__validate_input_number(max_attender, 1)
-        self.__join_fee = self.__validate_input_number(join_fee, 0)
-        self.__certified_topic = self.__validate_input_specific_type(certified_topic, Expertise)
-        self.__attenders = []
-        self.__status = EventStatus.SCHEDULED
+    __id_counter = count(1)
 
-        # Input Validation
-    def __validate_input_specific_type(self, obj, obj_type):
-        if isinstance(obj, obj_type): return obj
-        else: raise ValueError("Wrong Type")
-    
-    def __validate_input_number(self, number, minimum):
-        try:
-            if float(number) >= float(minimum): return number
-            else: raise Exception()
-        except: raise ValueError(f"Number must be equal or greater than {minimum}")
-    
-    @property
-    def event_id(self):
-        return self.__event_id
-    
-    def check_attender(self, user_id):
-        for user in self.__attenders:
-            if user.get_id == user_id: return True
-        return False
-    
-    def check_status(self):
-        return self.__status
-    
-    def check_availability(self):
-        return self.__status == EventStatus.OPEN
+    def __init__(self, topic, detail, time, instructor, space, item_list, max_attender: float, join_fee: float, certified_topic):
+        self.__event_id = f'WS-{next(self.__id_counter):04d}'
+        self.__topic = topic
+        self.__detail = detail
+        self.__time = time
+        self.__instructor = instructor
+        self.__space = space
+        self.__item_list = item_list if item_list else []
+        self.__max_attender = max_attender
+        self.__join_fee = float(join_fee)
+        self.__certified_topic = certified_topic
+        self.__status = EventStatus.SCHEDULED
+        self.__attendants = []
     
     @property
-    def join_fee(self):
-        return self.__join_fee
+    def get_id(self): return self.__event_id
+    
+    @property
+    def get_instructor(self): return self.__instructor
+
+    def check_joinable(self, user):
+        if len(self.__attendants) >= float(self.__max_attender): return False
+        if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
+        if user in self.__attendants: return False
+        return True
+
+    def calculate_fee(self, user):
+        return self.__join_fee * (1 - user.get_discount)
     
     def join(self, user):
-        if len(self.__attenders) + 1 <= self.__max_attender:
-            for attender in self.__attenders:
-                if user.get_id == attender.get_id: raise SystemError("Duplicate Join")
-            self.__attenders.append(user)
-            if len(self.__attenders) == self.__max_attender:
-                self.__status = EventStatus.FULL
-        else: raise SystemError("Join over limit")
+        self.__attendants.append(user)
+        if len(self.__attendants) >= float(self.__max_attender): self.__status = EventStatus.FULL
     
-    def remove_attender(self, user):
-        for attender in self.__attenders:
-            if user.get_id == attender.get_id:
-                self.__attenders.remove(attender)
-                if len(self.__attenders) < self.__max_attender:
-                    self.__status = EventStatus.OPEN
-    
+    def add_eq(self, ite):
+        self.__item_list.extend(ite)
 
-class Certificate:
-    def __init__(self, owner, event, certified_topic, certified_date, expired_date=None):
-        from user_class import User
-        self.__owner = self.__validate_input_specific_type(owner, User)
-        self.__event = self.__validate_input_specific_type(event, Event)
-        self.__certified_topic = self.__validate_input_specific_type(certified_topic, Expertise)
-        self.__certified_date = self.__validate_input_specific_type(certified_date, datetime)
-        self.__expired_date = self.__validate_input_specific_type(expired_date, datetime, True)
-    
-    # Input Validation
-    def __validate_input_specific_type(self, obj, obj_type, none_accepted=False):
-        if none_accepted and obj is None: return None
-        elif obj is not None and isinstance(obj, obj_type): return obj
-        else: raise TypeError("Wrong Type")
+class Certification:
+    def __init__(self, owner, event, certified_topic):
+        self.__owner = owner
+        self.__event = event
+        self.__certified_topic = certified_topic
+        self.__certified_date = datetime.now()
+        self.__expired_date = datetime.now() + timedelta(days=365)
     
     @property
-    def get_certified_topic(self):
-        return self.__certified_topic
-    
-    @property
-    def get_certified_date(self):
-        return self.__certified_date
-    
-    @property
-    def get_expired_date(self):
-        return self.__expired_date
+    def get_expertise(self): return self.__certified_topic
