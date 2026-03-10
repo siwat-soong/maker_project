@@ -56,6 +56,8 @@ def pay(user_id, inv_id, cost: float, method_id):
         if(method.validate(inv.get_cost, cost)): 
             change = method.process_payment()
             user.create_receipt(inv, change, method)
+            if inv.get_invoice_type == InvoiceType.SUBSCRIBE:
+                user.activate_membership()
             sys.notify(user, 'Payment', f'ชำระเงิน {inv.get_cost}฿ สำเร็จ ทอน {change}฿')
             return f'✅ Pay Success with change {change}'
         else: raise Exception
@@ -172,7 +174,7 @@ def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, s
         sp.process_reserve(1, t)
         ins.add_schedule(t)
 
-        event = Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise)
+        event = Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee), ins.get_expertise)
         sys.add_event(event)
         sys.broadcast('New Event', f'มี event ใหม่ [{event.get_id}] {topic} วันที่ {t.get_start_time.strftime("%d/%m/%Y %H:%M")} - {t.get_end_time.strftime("%H:%M")} โดย {ins.get_name}')
         return '✅ Create Event Success'

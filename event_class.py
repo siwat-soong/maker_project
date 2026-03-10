@@ -48,7 +48,7 @@ class Event:
         return True
 
     def calculate_fee(self, user):
-        return self.__join_fee * (1 - user.get_discount)
+        return round(self.__join_fee * (1 - user.get_discount), 2)
     
     def join(self, user):
         self.__attendants.append(user)

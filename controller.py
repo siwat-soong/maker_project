@@ -113,6 +113,7 @@ def system_init():
     try:
         maker = Club("Maker Club")
         butter = User("4517", "Butter", "0144796685")
+        akiko = User("9999", "Akiko", "0800000000")
         thana = Instructor("4244", "Thana", "0671799986", Expertise.THREE_D_PRINTER, 200)
         amnach = Admin("3308", "Computer Engineering")
         cash = Cash("C-0001", 3000)
@@ -132,6 +133,7 @@ def system_init():
         tool_b = ToolSet("EQM-TOOL-002", None, desk_a, 15)
 
         maker.add_user(butter)
+        maker.add_user(akiko)
         maker.add_instructor(thana)
         maker.add_admin(amnach)
         maker.add_payment_method(cash)

@@ -100,8 +100,10 @@ class User:
     def update_role(self, role: UserRole): self.__role = role
 
     def subscribe(self):
-        self.__role = UserRole.MEMBER
         self.__expired_date = datetime.now() + timedelta(days=365)
+
+    def activate_membership(self):
+        self.__role = UserRole.MEMBER
         self.__max_reserve_days = 14
         self.__discount = 0.2
     
@@ -124,8 +126,11 @@ class User:
         self.__line_item_list.extend(lit)
     
     def check_duplicate_cart(self, res, start_time, end_time):
+        from resource_class import Space, Material
         for lit in self.__line_item_list:
-            if lit.get_resource == res and lit.get_reserved_time.check_overlap(start_time, end_time): return True
+            lit_res = lit.get_resource
+            if not isinstance(lit_res, (Space, Material)): continue
+            if lit_res == res and lit.get_reserved_time.check_overlap(start_time, end_time): return True
         return False
 
     def clear_line_item(self): self.__line_item_list.clear()
