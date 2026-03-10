@@ -25,6 +25,10 @@ class Event:
     @property
     def get_instructor(self): return self.__instructor
 
+    @property
+    def get_status(self):
+        return self.__status
+
     def check_joinable(self, user):
         if len(self.__attendants) >= float(self.__max_attender): return False
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
@@ -40,6 +44,20 @@ class Event:
     
     def add_eq(self, ite):
         self.__item_list.extend(ite)
+    
+    def show_info(self):
+        return {
+        "event_id": self.__event_id,
+        "status": self.__status.value,
+        "topic": self.__topic,
+        "detail": self.__detail,
+        "time": str(self.__time),
+        "instructor": self.__instructor.get_id,
+        "location": self.__space.get_id if self.__space else None,
+        "attenders": f"{len(self.__attendants)}/{self.__max_attender}",
+        "join_fee": self.__join_fee,
+        "certified_topic": self.__certified_topic.value if hasattr(self.__certified_topic, 'value') else self.__certified_topic
+    }
 
 class Certification:
     def __init__(self, owner, event, certified_topic):

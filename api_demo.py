@@ -325,6 +325,20 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
 
+@app.get("/show_available_event")
+def show_available_event():
+    try:
+        from enum_class import EventStatus
+        available_event = []
+
+        for event in sys.get_event_list:
+            if event.get_status == EventStatus.OPEN:
+                available_event.append(event.show_info())
+
+        return {"message": "Show Available Event Complete", "data": available_event}
+    except Exception as e:
+        return {"error": str(e)}
+
 # Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)
