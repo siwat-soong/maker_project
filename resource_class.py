@@ -1,225 +1,304 @@
-from abc import ABC, abstractmethod
-from enum_class import ResourceStatus, SpaceType, EquipmentType, Expertise
-from datetime import time
+from enum_class import ResourceStatus, SpaceType, Expertise, EquipmentType
+from datetime import datetime
 
-class Resource(ABC):
+class Resource:
     def __init__(self, resource_id):
         self.__resource_id = resource_id
         self.__status = ResourceStatus.AVAILABLE
     
     @property
-    def get_id(self):
-        return self.__resource_id
+    def get_id(self): return self.__resource_id
+
+    @property
+    def get_status(self): return self.__status
+
+    def check_available(self): return self.__status == ResourceStatus.AVAILABLE
+
+    def update_status(self, status: ResourceStatus): self.__status = status
+    def check_status(self): pass
+
+    def calculate_fee(self, user, amount, duration): pass
+
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if user.check_blacklist(): return False
+        if user.check_invoice(): return False
+        return True
+
+    def check_expertise(self, user_expertise): return True
+    def check_schedule(self, start_time: datetime, end_time: datetime): return True
+
+    def check_reservable(self, start_time, end_time, amount):
+        if not (self.get_status == ResourceStatus.AVAILABLE): return False
+        if not (self.check_schedule(start_time, end_time)): return False
+        return True
     
-    def update_status(self, status):
-        if isinstance(status, ResourceStatus):
-            self.__status = status
+    def create_line_item(self, amount, time):
+        res = []
+        from transaction_class import LineItem
+        res.append(LineItem(self, amount, time))
+        return res
     
-    def check_status(self, status):
-        if isinstance(status, ResourceStatus) and status == self.__status: return True
-        else: return False
-    
-    @abstractmethod
-    def calculate_fee(self, user, amount, duration):
+    def process_reserve(self, amount, time):
         pass
 
-    @abstractmethod
-    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+    def cancel_reserve(self, time):
         pass
+
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value
+        }
 
 class Space(Resource):
-    def __init__(self, resource_id, space_type, capacity, opening_time, closing_time):
+    COWORK_GUEST_RATE_PER_HR  = 50
+    COWORK_MEMBER_FREE_HR     = 2
+    COWORK_MEMBER_RATE_PER_HR = 20
+
+    def __init__(self, resource_id, space_type: SpaceType, capacity, valid_start_time, valid_end_time):
         super().__init__(resource_id)
-        self.__space_type = self.__validate_input_type(space_type, SpaceType)
-        self.__capacity = self.__validate_input_capacity(capacity)
-        self.__opening_time = self.__validate_input_type(opening_time, time)
-        self.__closing_time = self.__validate_input_type(closing_time, time)
-
-    # Input Validation
-    def __validate_input_type(self, obj, obj_type):
-        if isinstance(obj, obj_type): return obj
-        else: raise TypeError(f"{obj} Type not in the list")
+        self.__space_type = space_type
+        self.__capacity = capacity
+        self.__valid_start_time = valid_start_time
+        self.__valid_end_time = valid_end_time
+        self.__schedule = []
+        self.__equipment_in_space = []
     
-    def __validate_input_capacity(self, capacity):
-        try:
-            if int(capacity) > 0: return capacity
-            else: raise Exception()
-        except: raise ValueError("Capacity must be positive integer")
+    def assign_eq(self, eq): self.__equipment_in_space.append(eq)
 
-    
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
-    
+        if self.__space_type == SpaceType.LABORATORY:
+            return 0
+        hours = duration / 60
+        is_member = user.get_discount > 0
+        if is_member:
+            billable_hours = max(0, hours - self.COWORK_MEMBER_FREE_HR)
+            total = billable_hours * self.COWORK_MEMBER_RATE_PER_HR
+        else:
+            total = hours * self.COWORK_GUEST_RATE_PER_HR
+        return round(total, 2)
+
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
-        pass
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if not self.check_available(): return False
+        if amount > self.__capacity: return False
+        adv_days = (start_time - datetime.now()).days
+        if adv_days > user.get_max_reserve_days: return False
+        if not user.check_expertise(self): return False
+        return True
+
+    def check_expertise(self, user_expertise):
+        for eq in self.__equipment_in_space:
+            if not eq.check_expertise(user_expertise): return False
+        return True
+    
+    def check_schedule(self, start_time: datetime, end_time: datetime): 
+        if start_time.time() < self.__valid_start_time or end_time.time() > self.__valid_end_time: return False
+        for sc in self.__schedule:
+            if sc.check_overlap(start_time, end_time): return False
+        return True
+    
+    def create_line_item(self, amount, time):
+        from transaction_class import LineItem
+        res = []
+        for eq in self.__equipment_in_space:
+            res.append(LineItem(eq, amount, time))
+        res.append(LineItem(self, amount, time))
+        return res
+    
+    def process_reserve(self, amount, time):
+        self.__schedule.append(time)
+
+    def cancel_reserve(self, time):
+        if time in self.__schedule:
+            self.__schedule.remove(time)
+            if not self.__schedule:
+                self.update_status(ResourceStatus.AVAILABLE)
+
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "space_type": self.__space_type.value,
+            "capacity": self.__capacity,
+            "valid_time": f"{self.__valid_start_time} - {self.__valid_end_time}"
+        }
 
 class Equipment(Resource):
-    def __init__(self, resource_id, required_cert, eq_type):
+    def __init__(self, resource_id, eq_type, required_cert: Expertise, location: Space):
         super().__init__(resource_id)
-        self.__required_cert = self.__validate_input_specific_type(required_cert, Expertise)
-        self.__eq_type = self.__validate_input_specific_type(eq_type, EquipmentType)
-    
-    # Input Validation
-    def __validate_input_specific_type(self, obj, obj_type):
-        if obj is None or isinstance(obj, obj_type): return obj
-        else: raise TypeError(f"{obj} is not appropriate type")
-    
-    @property
-    def get_eq_type(self):
-        return self.__eq_type
-    
-    # Abstract Method
-    def calculate_fee(self, user, amount, duration):
-        pass
-    
+        self.__eq_type = eq_type
+        self.__required_cert = required_cert
+        self.__location = location
+        self.__location.assign_eq(self)
+        self.__schedule = []
+
+    def calculate_fee(self, user, amount, duration): pass
+
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
-        pass
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if not self.check_available(): return False
+        if not user.check_expertise(self): return False
+        adv_days = (start_time - datetime.now()).days
+        if adv_days > user.get_max_reserve_days: return False
+        return True
+
+    def check_expertise(self, user_expertise): return self.__required_cert is None or user_expertise == self.__required_cert
+
+    def check_schedule(self, start_time: datetime, end_time: datetime):
+        for sc in self.__schedule:
+            if sc.check_overlap(start_time, end_time): return False
+        return True
+    
+    def process_reserve(self, amount, time):
+        self.__schedule.append(time)
+
+    def cancel_reserve(self, time):
+        if time in self.__schedule:
+            self.__schedule.remove(time)
+            if not self.__schedule:
+                self.update_status(ResourceStatus.AVAILABLE)
+
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "eq_type": self.__eq_type.value,
+            "required_cert": self.__required_cert.value if self.__required_cert else None,
+            "location": self.__location.get_id
+        }
 
 class ThreeDPrinter(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, print_volume, current_filament):
-        super().__init__(resource_id, required_cert, eq_type)
-        self.__print_volume = print_volume
-        self.__current_filament = self.__validate_input_current_filament(current_filament)
+    RATE_MEMBER = 0.5
+    RATE_GUEST  = 1.0
+    OWN_MATERIAL_SURCHARGE = 0.20
+
+    def __init__(self, resource_id, location, current_filament):
+        super().__init__(resource_id, EquipmentType.THREE_D_PRINTER, Expertise.THREE_D_PRINTER, location)
+        self.__current_filament = current_filament
         self.__filament_usage = 0
     
-    # Input validation
-    def __validate_input_current_filament(self, filament):
-        if filament is None or isinstance(filament, Filament): return filament
-        else: raise TypeError("Please insert filament only")
-    
-    # Abstract Method
-    def calculate_fee(self, user, amount, duration):
-        pass
+    def calculate_fee(self, user, amount, duration, own_material=False):
+        is_member = user.get_discount > 0
+        rate = self.RATE_MEMBER if is_member else self.RATE_GUEST
+        machine_fee = duration * rate
+        if own_material:
+            material_fee = 0
+            surcharge    = machine_fee * self.OWN_MATERIAL_SURCHARGE
+        else:
+            material_fee = amount * self.__current_filament.COST_PER_UNIT
+            surcharge    = 0
+        return round(machine_fee + material_fee + surcharge, 2)
+
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if self.__current_filament.check_reservable(None, None, amount): return True
+        return False
 
 class LaserCutter(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, work_area_size, current_material):
-        super().__init__(resource_id, required_cert, eq_type)
-        self.__print_volume = work_area_size
-        self.__current_filament = self.__validate_input_current_material(current_material)
-        self.__filament_usage = 0
+    RATE_MEMBER = 5.0
+    RATE_GUEST  = 10.0
+
+    def __init__(self, resource_id, location, current_material):
+        super().__init__(resource_id, EquipmentType.LASER_CUTTER, Expertise.LASER_CUTTER, location)
+        self.__current_material = current_material
+        self.__material_usage = 0
     
-    # Input validation
-    def __validate_input_current_material(self, material):
-        if material is None or (isinstance(material, Material) and material.get_supported_machine == self.get_eq_type): return material
-        else: raise TypeError("Please insert appropriate material")
-    
-    # Abstract Method
     def calculate_fee(self, user, amount, duration):
-        pass
+        is_member = user.get_discount > 0
+        rate = self.RATE_MEMBER if is_member else self.RATE_GUEST
+        machine_fee  = duration * rate
+        material_fee = amount * self.__current_material.COST_PER_UNIT
+        return round(machine_fee + material_fee, 2)
+
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        diff = (end_time - start_time).total_seconds() / 60
+        if diff < 15: return False
+        if self.__current_material.check_reservable(None, None, amount): return True
+        return False
+
+    def check_reservable(self, start_time, end_time, amount):
+        if not (self.get_status == ResourceStatus.AVAILABLE): return False
+        if not (self.check_schedule(start_time, end_time)): return False
+        diff = end_time - start_time
+        mins = diff.total_seconds() / 60
+        if mins < 15: return False
+        return True
 
 class ToolSet(Equipment):
-    def __init__(self, resource_id, required_cert, eq_type, tool_count):
-        super().__init__(resource_id, required_cert, eq_type)
-        self.__tool_count = self.__validate_input_positive_amount(tool_count)
-    
-    # Input Validation
-    def __validate_input_positive_amount(self, tool_count):
-        try:
-            if float(tool_count) > 0: return tool_count
-            else: raise Exception()
-        except: raise ValueError("Count must greater than 0")
-    
-    # Abstract Method
+    RATE_PER_HR_PER_TOOL = 30
+
+    def __init__(self, resource_id, required_cert, location, tool_count):
+        super().__init__(resource_id, EquipmentType.TOOL_SET, required_cert, location)
+        self.__tool_count = tool_count
+
     def calculate_fee(self, user, amount, duration):
-        pass
+        hours = duration / 60
+        total = hours * self.RATE_PER_HR_PER_TOOL * amount * (1 - user.get_discount)
+        return round(total, 2)
+
+    def validate_access(self, user, amount, start_time, end_time, line_item_list):
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if amount > self.__tool_count: return False
+        return True
 
 class Material(Resource):
-    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine):
+    COST_PER_UNIT = 0
+    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine: EquipmentType):
         super().__init__(resource_id)
-        self.__stock_qty = self.__validate_input_positive_amount(stock_qty)
+        self.__stock_qty = stock_qty
         self.__unit_name = unit_name
-        self.__minimum_stock = self.__validate_input_positive_amount(minimum_stock)
-        self.__supported_machine = self.__validate_input_supported_machine(supported_machine)
+        self.__minimum_stock = minimum_stock
+        self.__supported_machine = supported_machine
     
-    # Input Validation
-    def __validate_input_positive_amount(self, stock_qty):
-        try:
-            if float(stock_qty) >= 0: return stock_qty
-            else: raise Exception()
-        except: raise ValueError("Amount in stock must equal or greater than 0")
+    def process_reserve(self, amount, time):
+        self.__stock_qty -= amount
+        if self.__stock_qty <= self.__minimum_stock:
+            return True
+        return False
     
-    def __validate_input_supported_machine(self, machine):
-        if isinstance(machine, EquipmentType): return machine
-        else: raise TypeError(f"{machine} is not appropriate type")
-    
-    @property
-    def get_supported_machine(self):
-        return self.__supported_machine
+    def calculate_fee(self, user, amount, duration): 
+        total = amount * self.COST_PER_UNIT * (1 - user.get_discount)
+        return total
 
-    # Abstract Method
-    def calculate_fee(self, user, amount, duration):
-        pass
-    
     def validate_access(self, user, amount, start_time, end_time, line_item_list):
-        pass
+        if not super().validate_access(user, amount, start_time, end_time, line_item_list): return False
+        if self.__stock_qty - amount < 0: return False
+        return True
 
-    def check_deductible(self, amount):
-        try:
-            if float(amount) >= 0:
-                if self.__stock_qty >= amount  and self.__stock_qty - amount >= self.__minimum_stock: return True
-                else: return False
-            else: raise Exception()
-        except: raise ValueError("Amount deduct must equal or greater than 0")
-    
-    def deduct(self, amount):
-        try:
-            if float(amount) >= 0: self.__stock_qty -= amount
-            else: raise Exception()
-        except: raise ValueError("Amount deduct must equal or greater than 0")
-    
-    def restock(self, amount):
-        try:
-            if float(amount) >= 0: self.__stock_qty += amount
-            else: raise Exception()
-        except: raise ValueError("Amount restock must equal or greater than 0")
+    def check_reservable(self, start_time, end_time, amount):
+        if not (self.get_status == ResourceStatus.AVAILABLE): return False
+        if self.__stock_qty - amount < 0: return False
+        return True
+
+    def show_info(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "stock_qty": self.__stock_qty,
+            "unit_name": self.__unit_name
+        }
 
 class Filament(Material):
-    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, filament_type, diameter, color):
-        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, supported_machine)
+    COST_PER_UNIT = 2
+    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, filament_type, diameter, color):
+        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, EquipmentType.THREE_D_PRINTER)
         self.__filament_type = filament_type
-        self.__diameter = self.__validate_input_diameter(diameter)
+        self.__diameter = diameter
         self.__color = color
-    
-    # Input Validation
-    def __validate_input_diameter(self, diameter):
-        try:
-            if float(diameter) > 0: return diameter
-            else: raise Exception()
-        except: raise ValueError("Diameter must greater than 0")
-
-    def calculate_fee(self, user, amount, duration):
-        pass
 
 class Acrylic(Material):
-    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, color, dimension):
-        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, supported_machine)
-        self.__diameter = self.__validate_input_thickness(thickness)
-        self.__color = color
+    COST_PER_UNIT = 80
+    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, thickness, dimension, color):
+        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, EquipmentType.LASER_CUTTER)
+        self.__thickness = thickness
         self.__dimension = dimension
+        self.__color = color
     
-    # Input Validation
-    def __validate_input_thickness(self, thickness):
-        try:
-            if float(thickness) > 0: return thickness
-            else: raise Exception()
-        except: raise ValueError("Thickness must greater than 0")
-
-    def calculate_fee(self, user, amount, duration):
-        pass
-
 class Plank(Material):
-    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, supported_machine, thickness, wood_type):
-        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, supported_machine)
-        self.__diameter = self.__validate_input_thickness(thickness)
+    COST_PER_UNIT = 30
+    def __init__(self, resource_id, stock_qty, unit_name, minimum_stock, wood_type, thickness):
+        super().__init__(resource_id, stock_qty, unit_name, minimum_stock, EquipmentType.LASER_CUTTER)
         self.__wood_type = wood_type
-    
-    # Input Validation
-    def __validate_input_thickness(self, thickness):
-        try:
-            if float(thickness) > 0: return thickness
-            else: raise Exception()
-        except: raise ValueError("Thickness must greater than 0")
-
-    def calculate_fee(self, user, amount, duration):
-        pass
+        self.__thickness = thickness

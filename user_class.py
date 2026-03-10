@@ -1,30 +1,27 @@
-from datetime import datetime
-from enum_class import UserRole, Expertise
-from event_class import *
-from enum_class import *
+from enum_class import UserRole
+from datetime import datetime, timedelta
 
-# User & sub class
 class User:
     MEMBER_FEE = 100
     def __init__(self, user_id, name, tel):
+        # Basic Info
         self.__user_id = user_id
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
         self.__role = UserRole.GUEST
-        self.__certificate_list = []
-        self.__notification_list = []
-        self.__reservation_list = []
-        self.__receipt_list = []
-        self.__line_item_list = []
-        self.__unpaid_balance = 0
+        self.__expired_date = datetime.now() + timedelta(days=1)
+        self.__max_reserve_days = 1
         self.__is_blacklist = False
+        self.__discount = 0
 
+        # Storage
+        self.__certificate_list = []
+        self.__reservation_list = []
+        self.__line_item_list = []
+        self.__invoice_list = []
+        self.__receipt_list = []
+        self.__notification_list = []
 
-    # Print Method
-    def __repr__(self):
-        return f"👤 User:\nID = {self.__user_id}\nNAME = {self.__name}\nTEL = {self.__tel}\n"
-    
-    # Input Validation
     def __validate_input_name(self, name):
         if all(char.isalpha() or char.isspace() for char in name) and name != "": return name
         else: raise ValueError("Name must be character or space")
@@ -33,143 +30,137 @@ class User:
         if not tel.isdigit(): raise ValueError("Telephone Number must be number")
         if len(tel) != 10: raise ValueError("Telephone Number must have 10 digits")
         if tel[0] != "0": raise ValueError("Telephone Number must start with 0")
-        else: return tel
-    
-    # Getter and Setter
-    @property
-    def get_id(self):
-        return self.__user_id
+        return tel
     
     @property
-    def get_name(self):
-        return self.__name
+    def get_id(self): return self.__user_id
     
     @property
-    def get_tel(self):
-        return self.__tel
-    
+    def get_name(self): return self.__name
+
     @property
-    def get_role(self):
-        return self.__role
-    
+    def get_max_reserve_days(self): return self.__max_reserve_days
+
     @property
-    def get_max_reserve_days(self):
-        if self.__role == UserRole.ANNUALMEMBER:
-            return 14
-        else : return 1
-    def __repr__(self):
-        if self.__role == UserRole.ANNUALMEMBER:
-            return f"⭐ Member:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nSTATUS = {self.__role}\nEXPIRED DATE = {self.__expired_date}\n"
-        else : return f"User not is Member"
-    def update_status(self, status):
-            if isinstance(status, UserRole.ANNUALMEMBER):
-                self.__member_status = status
-                current_date = datetime.now()
-                self.__registry_date = current_date
-                self.__expired_date = current_date.replace(year=current_date.year + 1)
-                self.__monthly_quota = 120 # minutes
-    
-    def notify(self, notification):
-        from transaction import Notification
-        if isinstance(notification, Notification):
-            self.__notification_list.append(notification)
+    def get_line_item(self): return self.__line_item_list
 
-    def join_event(self, event_id):
-        pass
+    @property
+    def get_discount(self): return self.__discount
 
-    def add_receipt(self, receipt):
-        from transaction import Receipt
-        if isinstance(receipt, Receipt):
-            self.__notification_list.append(receipt)
+    @property
+    def get_reservation_list(self): return self.__reservation_list
 
-    def add_item_list(self, line_item):
-        pass
+    def show_info(self): 
+        return {
+            "UID": self.__user_id,
+            "NAME": self.__name,
+            "TEL": self.__tel,
+            "ROLE": self.__role,
+            "EXPIRED-DATE": self.__expired_date,
+            "MAX-RESERVE-DAYS": self.__max_reserve_days,
+            "BLACKLIST": self.__is_blacklist
+        }
 
-    def add_certificate(self, certificate):
-        if isinstance(certificate, Certificate): self.__certificate_list.append(certificate)
-        else: raise TypeError("Please add certificate only")
+    def show_notification(self):
+        return [
+            {
+                "topic": n.get_topic,
+                "detail": n.get_detail
+            }
+            for n in self.__notification_list
+        ]
 
-    def cancel_event(self, event_id):
-        pass
+    def add_certificate(self, certificate): self.__certificate_list.append(certificate)
+    def add_reservation(self, reservation): self.__reservation_list.append(reservation)
+    def add_invoice(self, invoice): self.__invoice_list.append(invoice)
+    def add_receipt(self, receipt): self.__receipt_list.append(receipt)
+    def add_notification(self, notification): self.__notification_list.append(notification)
 
-    def list_reserve_history(self):
-        pass
-    
-    def cancel_reservation(self, reservation_id, cancel_date_time):
-        pass
+    def search_invoice_by_id(self, inv_id):
+        for inv in self.__invoice_list:
+            if inv.get_id == inv_id: return inv
+        return None
 
-    def add_to_cart(self):
-        pass
+    def search_reservation_by_id(self, rsv_id):
+        for rsv in self.__reservation_list:
+            if rsv.get_id == rsv_id: return rsv
+        return None
 
-    def check_blacklist(self):
-        return self.__is_blacklist
-    
-    def check_certified(self, required_certified):
-        for certificate in self.__certificate_list:
-            if certificate.get_certified_topic == required_certified:
-                if certificate.get_expired_date is not None and datetime.now() < certificate.get_expired_date: return True
-                elif certificate is None: return True
-                else: return False
+    def check_blacklist(self): return self.__is_blacklist
+
+    def check_invoice(self): return len(self.__invoice_list) > 0
+
+    def check_expertise(self, resource):
+        if not self.__certificate_list:
+            if resource.check_expertise(None): return True
+            else: return False
+        for cert in self.__certificate_list:
+            if resource.check_expertise(cert.get_expertise): return True
         return False
 
+    def update_role(self, role: UserRole): self.__role = role
 
-    def check_in(self, reservation_id, space_id):
-        pass
-
-    def check_out(self, reservation_id, space_id):
-        pass
-
-    def pay_receipt(self, invoice_id, amount):
-        pass
-
-    def reserve(self):
-        pass
-
-    def return_resource(self, reservation_id, resource_id=None):
-        pass
+    def subscribe(self):
+        self.__role = UserRole.MEMBER
+        self.__expired_date = datetime.now() + timedelta(days=365)
+        self.__max_reserve_days = 14
+        self.__discount = 0.2
     
+    def create_invoice(self, invoice_type, detail, cost):
+        from transaction_class import Invoice
+        inv = Invoice(self, invoice_type, detail, cost)
+        self.add_invoice(inv)
+        return inv
+    
+    def create_receipt(self, inv, change, method):
+        from transaction_class import Receipt
+        rec = Receipt(inv.get_user, inv.get_invoice_type, inv.get_detail, inv.get_cost, change, type(method))
+        self.add_receipt(rec)
+        del_inv = self.search_invoice_by_id(inv.get_id)
+        self.__invoice_list.remove(del_inv)
+    
+    def add_to_cart(self, res, amount, start_time, end_time):
+        from transaction_class import LineItem, TimeRange
+        lit = list(res.create_line_item(amount, TimeRange(start_time, end_time)))
+        self.__line_item_list.extend(lit)
+    
+    def check_duplicate_cart(self, res, start_time, end_time):
+        for lit in self.__line_item_list:
+            if lit.get_resource == res and lit.get_reserved_time.check_overlap(start_time, end_time): return True
+        return False
+
+    def clear_line_item(self): self.__line_item_list.clear()
+
+    def remove_invoice(self, inv):
+        if inv in self.__invoice_list:
+            self.__invoice_list.remove(inv)
 
 class Instructor(User):
-    def __init__(self, user_id, name, tel, expertise, instructor_fee):
+    def __init__(self, user_id, name, tel, expertise, instructor_fee: float):
         super().__init__(user_id, name, tel)
-        self.__expertise = self.__validate_input_expertise(expertise)
-        self.__instructor_fee = self.__validate_input_fee(instructor_fee)
-
-    def __repr__(self):
-        return f"👨‍🏫 Instructor:\nID = {self.get_id}\nNAME = {self.get_name}\nTEL = {self.get_tel}\nEXPERTISE = {self.__expertise.value}\nINSTRUCTOR_FEE = {self.__instructor_fee}\n"
-
-    # Input Validation
-    def __validate_input_expertise(self, expertise):
-        if isinstance(expertise, Expertise): return expertise
-        else: raise ValueError("Expertise must be in the list")
+        self.update_role(UserRole.MEMBER)
+        self.__expertise = expertise
+        self.__instructor_fee = float(instructor_fee)
+        self.__schedule = []
     
-    def __validate_input_fee(self, fee):
-        try:
-            if float(fee) >= 0: return fee
-            else: raise Exception()
-        except:
-            raise ValueError("Fee must be positive number")
+    @property
+    def get_expertise(self): return self.__expertise
+    
+    @property
+    def get_fee(self): return self.__instructor_fee
 
-    def evaluate(self, user_id, event_id, score):
-        pass
+    def check_schedule(self, start_time, end_time):
+        for t in self.__schedule:
+            if t.check_overlap(start_time, end_time): return False
+        return True
+    
+    def add_schedule(self, time_range):
+        self.__schedule.append(time_range)
 
-    def list_event_attender(self,  event_id):
-        pass
-
-# Admin class
 class Admin:
-    def __init__(self, admin_id, name, department):
+    def __init__(self, admin_id, department):
         self.__admin_id = admin_id
-        self.__name = self.__validate_input_name(name)
         self.__department = department
-
-    # Input Validation
-    def __validate_input_name(self, name):
-        if all(char.isalpha() or char.isspace() for char in name) and name != "": return name
-        else: raise ValueError("Name must be character or space")
-
-    def force_cancel_membership(self,  user_id, reason):
-        pass
-
-    def generate_report(self):
-        pass
+    
+    @property
+    def get_id(self): return self.__admin_id
