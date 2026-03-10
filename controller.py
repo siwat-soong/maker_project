@@ -92,6 +92,15 @@ class Club:
         res = self.search_material_by_id(resource_id)
         if res is not None: return res
 
+    @property
+    def get_space_list(self): return self.__space_list
+
+    @property
+    def get_equipment_list(self): return self.__equipment_list
+
+    @property
+    def get_material_list(self): return self.__material_list
+
 def system_init():
     try:
         maker = Club("Maker Club")

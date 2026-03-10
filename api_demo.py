@@ -325,6 +325,28 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
 
+@app.get("/show_available_resource")
+def show_available_resource():
+    try:
+        from enum_class import ResourceStatus
+        available_resource = []
+
+        for space in sys.get_space_list:
+            if space.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(space.show_detail())
+
+        for equipment in sys.get_equipment_list:
+            if equipment.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(equipment.show_detail())
+
+        for material in sys.get_material_list:
+            if material.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(material.show_detail())
+
+        return {"message": "Show Available Resource Complete", "data": available_resource}
+    except Exception as e:
+        return {"error": str(e)}
+
 # Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)

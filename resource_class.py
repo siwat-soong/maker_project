@@ -39,6 +39,12 @@ class Resource:
     def process_reserve(self, amount, time):
         pass
 
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value
+        }
+
 class Space(Resource):
     def __init__(self, resource_id, space_type: SpaceType, capacity, valid_start_time, valid_end_time):
         super().__init__(resource_id)
@@ -79,6 +85,16 @@ class Space(Resource):
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
 
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "space_type": self.__space_type.value,
+            "capacity": self.__capacity,
+            "valid_time": f"{self.__valid_start_time} - {self.__valid_end_time}"
+        }
+
+
 class Equipment(Resource):
     def __init__(self, resource_id, eq_type, required_cert: Expertise, location: Space):
         super().__init__(resource_id)
@@ -101,6 +117,15 @@ class Equipment(Resource):
     
     def process_reserve(self, amount, time):
         self.__schedule.append(time)
+
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "eq_type": self.__eq_type.value,
+            "required_cert": self.__required_cert.value if self.__required_cert else None,
+            "location": self.__location.get_id
+        }
 
 class ThreeDPrinter(Equipment):
     def __init__(self, resource_id, location, current_filament):
@@ -158,6 +183,13 @@ class Material(Resource):
         if self.__stock_qty - amount < 0: return False
 
         return True
+    def show_detail(self):
+        return {
+            "resource_id": self.get_id,
+            "status": self.get_status.value,
+            "stock_qty": self.__stock_qty,
+            "unit_name": self.__unit_name
+        }
 
 
 class Filament(Material):
