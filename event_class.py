@@ -25,12 +25,27 @@ class Event:
     @property
     def get_instructor(self): return self.__instructor
 
+    @property
+    def get_all_attendants(self): return self.__attendants
+
+    def search_attendant_by_id(self, user_id):
+        for atd in self.__attendants:
+            if atd.get_id == user_id: return atd
+        return None
+    
+    @property
+    def get_certified_topic(self): return self.__certified_topic
+
     def check_joinable(self, user):
         if len(self.__attendants) >= float(self.__max_attender): return False
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
         if user in self.__attendants: return False
         return True
-
+    def check_attender(self, user_id):
+        for atd in self.__attendants:
+            if atd.get_id == user_id: return False
+        return True
+    
     def calculate_fee(self, user):
         return self.__join_fee * (1 - user.get_discount)
     
@@ -42,10 +57,11 @@ class Event:
         self.__item_list.extend(ite)
 
 class Certification:
-    def __init__(self, owner, event, certified_topic):
+    def __init__(self, owner, event, certified_topic, grade = None):
         self.__owner = owner
         self.__event = event
         self.__certified_topic = certified_topic
+        self.__grade = grade
         self.__certified_date = datetime.now()
         self.__expired_date = datetime.now() + timedelta(days=365)
     
