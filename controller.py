@@ -114,6 +114,10 @@ def system_init():
         maker = Club("Maker Club")
         butter = User("4517", "Butter", "0144796685")
         akiko = User("9999", "Akiko", "0800000000")
+        god = User("0001", "God", "0999999999")
+        from event_class import Certification
+        for exp in [Expertise.ADVANCED, Expertise.THREE_D_PRINTER, Expertise.LASER_CUTTER]:
+            god.add_certificate(Certification(god, None, exp))
         thana = Instructor("4244", "Thana", "0671799986", Expertise.THREE_D_PRINTER, 200)
         amnach = Admin("3308", "Computer Engineering")
         cash = Cash("C-0001", 3000)
@@ -134,6 +138,7 @@ def system_init():
 
         maker.add_user(butter)
         maker.add_user(akiko)
+        maker.add_user(god)
         maker.add_instructor(thana)
         maker.add_admin(amnach)
         maker.add_payment_method(cash)

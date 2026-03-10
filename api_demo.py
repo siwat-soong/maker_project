@@ -39,6 +39,7 @@ def subscribe(user_id):
         if user is None: raise Exception
         elif user.check_blacklist(): raise Exception
         elif user.check_invoice(): raise Exception
+        elif user.get_expired_date > datetime.now(): raise Exception
         else: 
             user.subscribe()
             inv = user.create_invoice(InvoiceType.SUBSCRIBE, f'{user.get_name} subscribe member from {datetime.now()} for 365 days', 100)
@@ -51,6 +52,8 @@ def subscribe(user_id):
 def pay(user_id, inv_id, cost: float, method_id):
     try:
         user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
         inv = user.search_invoice_by_id(inv_id)
         method = sys.search_method_by_id(method_id)
         if(method.validate(inv.get_cost, cost)): 
@@ -85,7 +88,6 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount: float):
         res = sys.search_resource_by_id(item_id)
         if not res: raise Exception
 
-        # Check User Rights
         if mode != "COMPANY":
             if target_user.check_blacklist(): raise Exception
             adv_res_dur = start_time - datetime.now()
@@ -94,7 +96,6 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount: float):
             
         if target_user.check_duplicate_cart(res, start_time, end_time): raise Exception
 
-        # Check Resource Availability
         if not res.check_reservable(start_time, end_time, amount): raise Exception
 
         target_user.add_to_cart(res, amount, start_time, end_time)
@@ -130,7 +131,6 @@ def reserve(user_id):
             if isinstance(lit.get_resource, Material): purchase_list.append(lit)
             else: reserve_list.append(lit)
 
-        # make reservation
         from transaction_class import Reservation
         user.add_reservation(Reservation(user, reserve_list))
 
@@ -233,17 +233,30 @@ def add_equipment_to_event(user_id, event_id):
 
         if event.get_instructor != ins: raise Exception
 
+        if ins.check_invoice(): raise Exception
+
         lit_list = ins.get_line_item
         if not lit_list: raise Exception
         
+        from resource_class import Material
+        total = 0
         for lit in lit_list:
             if not lit.get_resource.check_reservable(lit.get_reserved_time.get_start_time, lit.get_reserved_time.get_end_time, lit.get_amount): raise Exception
             lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
-        
+            if isinstance(lit.get_resource, Material):
+                total += lit.get_resource.calculate_fee(ins, lit.get_amount, None)
+
         event.add_eq(lit_list)
         ins.clear_line_item()
 
-        return '✅ Add to Event Success'
+        if total > 0:
+            inv = ins.create_invoice(InvoiceType.RESOURCE, f"Material for event {event_id}", total)
+            sys.notify(ins, 'Add to Event', f'เพิ่มของเข้า event {event_id} สำเร็จ ค่าวัสดุ {total}฿ ที่ใบแจ้งหนี้ {inv.get_id}')
+            return f'✅ Add to Event Success, material cost {total}฿'
+
+        sys.notify(ins, 'Add to Event', f'เพิ่มของเข้า event {event_id} สำเร็จ ไม่มีค่าวัสดุ')
+        return '✅ Add to Event Success, no material cost'
+
     except: return '⛔ Add to Event Failed'
 
 @app.post("/checkin")
@@ -409,7 +422,6 @@ def show_all_resource():
     except Exception as e:
         return {"error": str(e)}
 
-# Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)
 
