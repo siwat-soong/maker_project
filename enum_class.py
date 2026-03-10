@@ -27,9 +27,12 @@ class EquipmentType(Enum):
 
 class ReserveStatus(Enum):
     CONFIRMED = "CONFIRMED"
-    CHECKED_IN = "CHECKED_IN"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+class LineItemStatus(Enum):
+    CHECKED_IN = "CHECKED_IN"
+    COMPLETED = "COMPLETED"
 
 class EventStatus(Enum):
     SCHEDULED = "SCHEDULED"

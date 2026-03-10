@@ -1,5 +1,10 @@
-from user_class import User
+from datetime import datetime, time
+
+from user_class import User, Instructor, Admin
 from payment_class import Cash, QRCode
+from resource_class import Space, ThreeDPrinter, LaserCutter, ToolSet, Filament, Acrylic, Plank
+from enum_class import SpaceType, Expertise
+from transaction_class import TimeRange
 
 class Club:
     def __init__(self, name):
@@ -39,26 +44,95 @@ class Club:
         for user in self.__user_list:
             if user.get_id == user_id: return user
         return None
+    
+    def search_admin_by_id(self, admin_id):
+        for admin in self.__admin_list:
+            if admin.get_id == admin_id: return admin
+        return None
+    
+    def search_instructor_by_id(self, instructor_id):
+        for instructor in self.__instructor_list:
+            if instructor.get_id == instructor_id: return instructor
+        return None
 
     def search_method_by_id(self, method_id):
         for method in self.__payment_method_list:
             if method.get_id == method_id: return method
         return None
+    
+    def search_space_by_id(self, space_id):
+        for space in self.__space_list:
+            if space.get_id == space_id: return space
+        return None
+    
+    def search_equipment_by_id(self, equipment_id):
+        for equipment in self.__equipment_list:
+            if equipment.get_id == equipment_id: return equipment
+        return None
+    
+    def search_material_by_id(self, material_id):
+        for material in self.__material_list:
+            if material.get_id == material_id: return material
+        return None
+    
+    def search_event_by_id(self, event_id):
+        for event in self.__event_list:
+            if event.get_id == event_id: return event
+        return None
+
+    def search_resource_by_id(self, resource_id):
+        res = None
+
+        res = self.search_space_by_id(resource_id)
+        if res is not None: return res
+
+        res = self.search_equipment_by_id(resource_id)
+        if res is not None: return res
+
+        res = self.search_material_by_id(resource_id)
+        if res is not None: return res
 
 def system_init():
     try:
         maker = Club("Maker Club")
         butter = User("4517", "Butter", "0144796685")
+        thana = Instructor("4244", "Thana", "0671799986", Expertise.THREE_D_PRINTER, 200)
+        amnach = Admin("3308", "Computer Engineering")
         cash = Cash("C-0001", 3000)
         qr = QRCode("Q-0001")
 
+        lab_a = Space("SPA-LAB-001", SpaceType.LABORATORY, 30, time(10, 0), time(22, 0))
+        desk_a = Space("SPA-DESK-001", SpaceType.HOT_DESK, 4, time(10, 0), time(22, 0))
+        meet_a = Space("SPA-MEET-001", SpaceType.MEETING_ROOM, 10, time(10, 0), time(22, 0))
+
+        filament_a = Filament("MAT-PLA-001", 1000, "grams", 0, "PLA", 1.75, "RED")
+        acrylic_a = Acrylic("MAT-ACR-001", 20, "sheets", 1, 5, "20x20", "CLEAR")
+        plank_a = Plank("MAT-WOOD-001", 30, "sheets", 1, "PLYWOOD", 5)
+
+        printer_a = ThreeDPrinter("EQM-3DP-001", lab_a, filament_a)
+        laser_a = LaserCutter("EQM-LSC-001", lab_a, acrylic_a)
+        tool_a = ToolSet("EQM-TOOL-001", Expertise.ADVANCED, desk_a, 10)
+        tool_b = ToolSet("EQM-TOOL-002", None, desk_a, 15)
+
         maker.add_user(butter)
+        maker.add_instructor(thana)
+        maker.add_admin(amnach)
         maker.add_payment_method(cash)
         maker.add_payment_method(qr)
+
+        maker.add_space(lab_a)
+        maker.add_space(desk_a)
+        maker.add_space(meet_a)
+
+        maker.add_material(filament_a)
+        maker.add_material(acrylic_a)
+        maker.add_material(plank_a)
+
+        maker.add_equipment(printer_a)
+        maker.add_equipment(laser_a)
+        maker.add_equipment(tool_a)
+        maker.add_equipment(tool_b)
 
         print("✅ Init Success")
         return maker
     except: print("⛔ Init Failed")
-
-
-system_init()
