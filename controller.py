@@ -25,6 +25,10 @@ class Club:
 
         # Event Storage
         self.__event_list = []
+
+    @property
+    def event_list(self):
+        return self.__event_list
     
     # Add Method
     def add_user(self, user: User): self.__user_list.append(user)
