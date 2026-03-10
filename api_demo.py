@@ -331,13 +331,25 @@ def show_available_event():
         from enum_class import EventStatus
         available_event = []
 
-        for event in sys.get_event_list:
+        for event in sys.event_list:
             if event.get_status == EventStatus.OPEN:
                 available_event.append(event.show_info())
 
         return {"message": "Show Available Event Complete", "data": available_event}
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/show_all_event")
+def show_all_event():
+    try:
+        results_event = []
+        for event in sys.event_list:
+            results_event.append(event.show_info())
+        return {
+            "message": "Show Available Event Complete",
+            "data": results_event
+        }
+    except : return 'Show all event fail'
 
 # Running Section
 def run_api():

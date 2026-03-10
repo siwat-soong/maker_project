@@ -96,10 +96,6 @@ class Club:
         res = self.search_material_by_id(resource_id)
         if res is not None: return res
     
-    @property
-    def get_event_list(self):
-        return self.__event_list
-
 def system_init():
     try:
         maker = Club("Maker Club")
