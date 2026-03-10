@@ -25,6 +25,10 @@ class Event:
     @property
     def get_instructor(self): return self.__instructor
 
+    @property
+    def get_attendants(self):
+        return self.__attendants
+
     def check_joinable(self, user):
         if len(self.__attendants) >= float(self.__max_attender): return False
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
