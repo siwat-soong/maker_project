@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from user_class import User, Instructor, Admin
 from payment_class import Cash, QRCode
@@ -113,6 +113,20 @@ def system_init():
         laser_a = LaserCutter("EQM-LSC-001", lab_a, acrylic_a)
         tool_a = ToolSet("EQM-TOOL-001", Expertise.ADVANCED, desk_a, 10)
         tool_b = ToolSet("EQM-TOOL-002", None, desk_a, 15)
+
+    #     from event_class import Event
+    #     from transaction_class import TimeRange
+    
+    #     # Mock Event 1 → ได้ WS-0001
+    #     t1 = TimeRange(datetime(2026, 3, 20, 10, 0), datetime(2026, 3, 20, 16, 0))
+    #     meet_a.process_reserve(1, t1)
+    #     event1 = Event("3D Printing Workshop", "เรียนรู้การใช้ 3D Printer", t1, thana, meet_a, None, 10, 200, Expertise.THREE_D_PRINTER)
+    #     maker.add_event(event1)
+
+    # # Mock Event 2 → ได้ WS-0002
+    #     t2 = TimeRange(datetime(2026, 3, 25, 13, 0), datetime(2026, 3, 25, 17, 0))
+    #     event2 = Event("Laser Cutter Basic", "พื้นฐาน Laser Cutter", t2, thana, meet_a, None, 5, 150, Expertise.LASER_CUTTER)
+    #     maker.add_event(event2)
 
         maker.add_user(butter)
         maker.add_instructor(thana)
