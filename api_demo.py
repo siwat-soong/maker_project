@@ -342,7 +342,7 @@ def show_event_attenders(instructor_id,event_id):
 
 # Running Section
 def run_api():
-    uvicorn.run("api_demo:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)
 
 if __name__ == "__main__":
     run_api()
