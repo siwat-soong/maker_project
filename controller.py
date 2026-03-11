@@ -97,6 +97,9 @@ class Club:
     @property
     def get_material_list(self): return self.__material_list
 
+    @property
+    def get_event_list(self): return self.__event_list
+
     # Notification Methods
     def notify(self, user, topic, detail):
         from transaction_class import Notification
@@ -107,7 +110,28 @@ class Club:
         for user in self.__user_list:
             user.add_notification(Notification(user, topic, detail))
         for ins in self.__instructor_list:
-            ins.add_notification(Notification(ins, topic, detail))
+            ins.add_notification(Notification(ins, topic, detail))\
+    
+    def remove_event(self, event):
+        if event in self.__event_list:
+            space = event.get_space
+            time_range = event.get_time
+            if space and time_range:
+                space.cancel_reserve(time_range)
+            
+            instructor = event.get_instructor
+            if instructor and time_range:
+                instructor.remove_schedule(time_range)
+            
+            for item in event.get_item_list:
+                resource = item.get_resource
+                item_time = item.get_reserved_time
+                if hasattr(resource, 'cancel_reserve'):
+                    resource.cancel_reserve(item_time)
+                    
+            self.__event_list.remove(event)
+            return True
+        return False
 
 def system_init():
     try:

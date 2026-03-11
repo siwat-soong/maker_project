@@ -326,6 +326,7 @@ def check_out(user_id, rsv_id, space_id, start_time):
         lit.set_end_time = datetime.now()
         fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
+        space.cancel_reserve(lit.get_reserved_time)
 
         user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
         sys.notify(user, 'Check Out', f'Check out {space_id} สำเร็จ ค่าบริการ {fee}฿')
@@ -349,11 +350,10 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         lit = rsv.search_item_list(eq, start_time)
         if not lit: raise Exception
 
-        if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
-
         lit.set_end_time = datetime.now()
         fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
+        eq.cancel_reserve(lit.get_reserved_time)
 
         user.create_invoice(InvoiceType.RESOURCE, "Return Equipment", fee)
         sys.notify(user, 'Return Equipment', f'คืน {equipment_id} สำเร็จ ค่าบริการ {fee}฿')
@@ -377,6 +377,42 @@ def cancel_reserve(user_id, rsv_id):
         sys.notify(user, 'Cancel Reserve', f'ยกเลิกการจอง {rsv_id} สำเร็จ ไม่มีค่าปรับ')
         return '✅ Cancelled, no fee'
     except: return '⛔ Cancel Failed'
+
+@app.post("/event/cancel_join")
+def cancel_join_event(user_id, event_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: raise Exception
+
+        event = sys.search_event_by_id(event_id)
+        if not event: raise Exception
+
+        event.remove_attendant(user) 
+        
+        sys.notify(user, 'Cancel Join Event', f'ยกเลิกการเข้าร่วมกิจกรรม {event.get_topic()} สำเร็จ')
+        return '✅ Cancel Join Event Success'
+    except:
+        return '⛔ Cancel Join Event Failed'
+    
+@app.post("/event/cancel_event")
+def cancel_event(instructor_id, event_id):
+    try:
+        ins = sys.search_instructor_by_id(instructor_id)
+        if not ins: raise Exception
+
+        event = sys.search_event_by_id(event_id)
+        if not event: raise Exception
+
+        if event.get_instructor != ins: raise Exception
+
+        for attender in event.get_attendants:
+            sys.notify(attender, 'Event Cancelled', f'กิจกรรม {event.get_topic()} ถูกยกเลิกโดยผู้สอน')
+        
+        sys.remove_event(event)
+
+        return '✅ Cancel Event Success'
+    except:
+        return '⛔ Cancel Event Failed'
 
 @app.post("/show_event_attenders")
 def show_event_attenders(instructor_id, event_id):
@@ -420,6 +456,16 @@ def show_all_resource():
         for material in sys.get_material_list:
             show_resource.append(material.show_info())
         return {"message": "Show All Resource Complete", "data": show_resource}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/show_all_events")
+def show_all_events():
+    try:
+        show_events = []
+        for event in sys.get_event_list: 
+            show_events.append(event.show_info())
+        return {"message": "Show All Events Complete", "data": show_events}
     except Exception as e:
         return {"error": str(e)}
 

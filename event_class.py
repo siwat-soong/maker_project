@@ -31,6 +31,15 @@ class Event:
     @property
     def get_certified_topic(self): return self.__certified_topic
 
+    @property
+    def get_time(self): return self.__time
+
+    @property
+    def get_space(self): return self.__space
+
+    @property
+    def get_item_list(self): return self.__item_list
+
     def search_attendant_by_id(self, user_id):
         for atd in self.__attendants:
             if atd.get_id == user_id: return atd
@@ -56,6 +65,11 @@ class Event:
     
     def add_eq(self, ite):
         self.__item_list.extend(ite)
+
+    def remove_attendant(self, user):
+        if user in self.__attendants:
+            self.__attendants.remove(user)
+        else: raise Exception
 
 class Certification:
     def __init__(self, owner, event, certified_topic, grade=None):

@@ -15,7 +15,6 @@ class Resource:
     def check_available(self): return self.__status == ResourceStatus.AVAILABLE
 
     def update_status(self, status: ResourceStatus): self.__status = status
-    def check_status(self): pass
 
     def calculate_fee(self, user, amount, duration): pass
 
@@ -45,6 +44,7 @@ class Resource:
     def cancel_reserve(self, time):
         if time in self.__schedule:
             self.__schedule.remove(time)
+            self.update_status(ResourceStatus.AVAILABLE)
         if not self.__schedule:
             self.update_status(ResourceStatus.AVAILABLE)
 

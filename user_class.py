@@ -163,6 +163,10 @@ class Instructor(User):
     
     def add_schedule(self, time_range):
         self.__schedule.append(time_range)
+    
+    def remove_schedule(self, time_range):
+        if time_range in self.__schedule:
+            self.__schedule.remove(time_range)
 
 class Admin:
     def __init__(self, admin_id, department):
