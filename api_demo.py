@@ -8,8 +8,6 @@ sys = system_init()
 
 app = FastAPI()
 
-
-
 @app.get("/")
 def ping():
     return {
@@ -17,9 +15,22 @@ def ping():
         "message": "pong"
     }
 
+@app.get("/notifications")
+def show_notifications(user_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+        return user.show_notification()
+    except:
+        return "⛔ Get Notifications Failed"
+
 @app.get("/user_info")
 def show_user_info(user_id):
     user = sys.search_user_by_id(user_id)
+    
+    if not user: user = sys.search_instructor_by_id(user_id)
+    if not user: return "⛔ User Not Found"
     return user.show_info()
 
 @app.post("/subscribe")
@@ -29,11 +40,12 @@ def subscribe(user_id):
         if user is None: raise Exception
         elif user.check_blacklist(): raise Exception
         elif user.check_invoice(): raise Exception
+        elif user.get_expired_date > datetime.now(): raise Exception
         else: 
             user.subscribe()
             inv = user.create_invoice(InvoiceType.SUBSCRIBE, f'{user.get_name} subscribe member from {datetime.now()} for 365 days', 100)
+            sys.notify(user, 'Subscribe', f'สมัครสมาชิกสำเร็จ กรุณาชำระค่าสมัคร 100฿ ที่ใบแจ้งหนี้ {inv.get_id}')
             return f'✅ Subscribe Success, Please pay fee 100$ to ID: {inv.get_id}'
-
     except:
         return f'⛔ Subscribe Failed'
 
@@ -41,11 +53,16 @@ def subscribe(user_id):
 def pay(user_id, inv_id, cost: float, method_id):
     try:
         user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
         inv = user.search_invoice_by_id(inv_id)
         method = sys.search_method_by_id(method_id)
         if(method.validate(inv.get_cost, cost)): 
             change = method.process_payment()
             user.create_receipt(inv, change, method)
+            if inv.get_invoice_type == InvoiceType.SUBSCRIBE:
+                user.activate_membership()
+            sys.notify(user, 'Payment', f'ชำระเงิน {inv.get_cost}฿ สำเร็จ ทอน {change}฿')
             return f'✅ Pay Success with change {change}'
         else: raise Exception
     except:
@@ -72,16 +89,14 @@ def add_to_cart(user_id, item_id, start_time, end_time, amount: float):
         res = sys.search_resource_by_id(item_id)
         if not res: raise Exception
 
-        # Check User Rights
         if mode != "COMPANY":
             if target_user.check_blacklist(): raise Exception
-            adv_res_dur = datetime.now() - start_time
+            adv_res_dur = start_time - datetime.now()
             if adv_res_dur.days > target_user.get_max_reserve_days: raise Exception
             if not target_user.check_expertise(res): raise Exception
             
         if target_user.check_duplicate_cart(res, start_time, end_time): raise Exception
 
-        # Check Resource Availability
         if not res.check_reservable(start_time, end_time, amount): raise Exception
 
         target_user.add_to_cart(res, amount, start_time, end_time)
@@ -109,34 +124,31 @@ def reserve(user_id):
         
         for lit in lit_list:
             if not lit.get_resource.check_reservable(lit.get_reserved_time.get_start_time, lit.get_reserved_time.get_end_time, lit.get_amount): raise Exception
-            lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
+            low_stock = lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
+            if low_stock:
+                sys.broadcast('Low Stock', f'วัสดุ {lit.get_resource.get_id} ใกล้หมดแล้ว')
 
             from resource_class import Material
             if isinstance(lit.get_resource, Material): purchase_list.append(lit)
             else: reserve_list.append(lit)
 
-        # make reservation
         from transaction_class import Reservation
         user.add_reservation(Reservation(user, reserve_list))
 
         total = 0
         if purchase_list:
-            # loop calculate total cost
             for item in purchase_list:
                 total += item.get_resource.calculate_fee(user, item.get_amount, None)
-
-            # make invoice
             user.create_invoice(InvoiceType.RESOURCE, "Purchased Material", total)
 
-        # clear line item
         user.clear_line_item()
 
+        sys.notify(user, 'Reserve', f'จองสำเร็จ รหัสการจอง {user.get_reservation_list[-1].get_id} ค่าวัสดุ {total}฿')
         return f'✅ Reserve Done, total cost {total}$'
 
     except:
         return '⛔ Reserve Failed'
 
-# http://127.0.0.1:8000/event/create?admin_id=3308&topic=""&detail=""&start_time=20/03/2026,10:00&end_time=20/03/2026,16:00&instructor_id=4244&space_id=SPA-MEET-001&max_attender=10&join_fee=0
 @app.post("/event/create")
 def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, space_id, max_attender, join_fee: float):
     try:
@@ -159,10 +171,12 @@ def create_event(admin_id, topic, detail, start_time, end_time, instructor_id, s
         from event_class import Event
         t = TimeRange(start_time, end_time)
         sp.process_reserve(1, t)
+        ins.add_schedule(t)
 
-        sys.add_event(Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee) + ins.get_fee, ins.get_expertise))
-
-        return '✅ Create Event Success'
+        event = Event(topic, detail, t, ins, sp, None, max_attender, float(join_fee), ins.get_expertise)
+        sys.add_event(event)
+        sys.broadcast('New Event', f'มี event ใหม่ [{event.get_id}] {topic} วันที่ {t.get_start_time.strftime("%d/%m/%Y %H:%M")} - {t.get_end_time.strftime("%H:%M")} โดย {ins.get_name}')
+        return f'✅ Create Event Success, Event ID: {event.get_id}'
     except:
         return '⛔ Create Event Failed'
 
@@ -181,11 +195,10 @@ def join_event(user_id, event_id):
         if not event.check_joinable(user): raise Exception
 
         fee = event.calculate_fee(user)
-
         event.join(user)
 
         user.create_invoice(InvoiceType.EVENT, f'You has joined event {event.get_id}', fee)
-
+        sys.notify(user, 'Join Event', f'เข้าร่วม event {event.get_id} สำเร็จ ค่าเข้าร่วม {fee}฿')
         return f'✅ Join Event Success, fee = {fee}$'
 
     except:
@@ -195,20 +208,19 @@ def join_event(user_id, event_id):
 def add_certificate(instructor_id, event_id, user_id, score: float):
     try:
         ins = sys.search_instructor_by_id(instructor_id)
-        if not ins: raise Exception ("You aren't instructor")
+        if not ins: raise Exception
         event = sys.search_event_by_id(event_id)
-        if not event: raise Exception ("Event not found")
+        if not event: raise Exception
         attendant = sys.search_user_by_id(user_id)
-        if not attendant: raise Exception ("User not found")
-        if not event.get_instructor.get_id == instructor_id: raise Exception ("You aren't instructor of this event")
-        if not event.search_attendant_by_id(user_id): raise Exception ("This user isn't attendant of this event")
-        if score >= 50: grade = "PASS"
-        else: grade = "FAIL"
+        if not attendant: raise Exception
+        if not event.get_instructor.get_id == instructor_id: raise Exception
+        if not event.search_attendant_by_id(user_id): raise Exception
+        grade = "PASS" if score >= 50 else "FAIL"
         from event_class import Certification
         attendant.add_certificate(Certification(attendant, event, event.get_certified_topic, grade))
-        return "add certificate success"
+        return "✅ Add Certificate Success"
     except:
-        return "add certificate failed"
+        return "⛔ Add Certificate Failed"
 
 @app.put("/event/add")
 def add_equipment_to_event(user_id, event_id):
@@ -221,18 +233,30 @@ def add_equipment_to_event(user_id, event_id):
 
         if event.get_instructor != ins: raise Exception
 
+        if ins.check_invoice(): raise Exception
+
         lit_list = ins.get_line_item
         if not lit_list: raise Exception
         
+        from resource_class import Material
+        total = 0
         for lit in lit_list:
             if not lit.get_resource.check_reservable(lit.get_reserved_time.get_start_time, lit.get_reserved_time.get_end_time, lit.get_amount): raise Exception
             lit.get_resource.process_reserve(lit.get_amount, lit.get_reserved_time)
-        
-        event.add_eq(lit_list)
+            if isinstance(lit.get_resource, Material):
+                total += lit.get_resource.calculate_fee(ins, lit.get_amount, None)
 
+        event.add_eq(lit_list)
         ins.clear_line_item()
 
-        return '✅ Add to Event Success'
+        if total > 0:
+            inv = ins.create_invoice(InvoiceType.RESOURCE, f"Material for event {event_id}", total)
+            sys.notify(ins, 'Add to Event', f'เพิ่มของเข้า event {event_id} สำเร็จ ค่าวัสดุ {total}฿ ที่ใบแจ้งหนี้ {inv.get_id}')
+            return f'✅ Add to Event Success, material cost {total}฿'
+
+        sys.notify(ins, 'Add to Event', f'เพิ่มของเข้า event {event_id} สำเร็จ ไม่มีค่าวัสดุ')
+        return '✅ Add to Event Success, no material cost'
+
     except: return '⛔ Add to Event Failed'
 
 @app.post("/checkin")
@@ -265,21 +289,17 @@ def check_in(user_id, rsv_id, space_id, start_time):
     
             base_fine = 50 
             rate_per_half_hour = 20
-            
             extra_periods = ((diff_mins * -1) - 15) / 30
             total_fine = base_fine + (extra_periods * rate_per_half_hour)
 
-            user.create_invoice(InvoiceType.FEE, "Check Out Late Fine", total_fine)
+            user.create_invoice(InvoiceType.FEE, "Check In Late Fine", total_fine)
             return f'⚠️ Fine : {total_fine:.2f}$'
         else:
             from enum_class import ResourceStatus, LineItemStatus
             space.update_status(ResourceStatus.IN_USE)
             lit.update_status(LineItemStatus.CHECKED_IN)
-
-            # Check in update status in other 
-
             lit.set_start_time = now
-
+            sys.notify(user, 'Check In', f'Check in {space_id} เวลา {now.strftime("%d/%m/%Y %H:%M")} สำเร็จ')
         return '✅ Check In Success'
     except: return '⛔ Check In Failed'
 
@@ -303,13 +323,12 @@ def check_out(user_id, rsv_id, space_id, start_time):
         if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
 
         lit.set_end_time = datetime.now()
-
-        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
-
+        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
+        space.cancel_reserve(lit.get_reserved_time)
 
         user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
-
+        sys.notify(user, 'Check Out', f'Check out {space_id} สำเร็จ ค่าบริการ {fee}฿')
         return f'✅ Check Out Success, cost = {fee}$'
     except: return '⛔ Check Out Failed'
 
@@ -330,55 +349,125 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         lit = rsv.search_item_list(eq, start_time)
         if not lit: raise Exception
 
-        if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
-
         lit.set_end_time = datetime.now()
-
-        fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration)
-
+        fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
+        eq.cancel_reserve(lit.get_reserved_time)
 
-        user.create_invoice(InvoiceType.RESOURCE, "Check Out", fee)
-
+        user.create_invoice(InvoiceType.RESOURCE, "Return Equipment", fee)
+        sys.notify(user, 'Return Equipment', f'คืน {equipment_id} สำเร็จ ค่าบริการ {fee}฿')
         return f'✅ Return Success, cost = {fee}$'
     except: return '⛔ Return Failed'
 
+@app.post("/cancel_reserve")
+def cancel_reserve(user_id, rsv_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: user = sys.search_instructor_by_id(user_id)
+        if not user: raise Exception
+        rsv = user.search_reservation_by_id(rsv_id)
+        if not rsv: raise Exception
+        fee = rsv.cancel()
+        if fee is None: raise Exception
+        if fee > 0:
+            user.create_invoice(InvoiceType.FEE, f'No-show fee for {rsv_id}', fee)
+            sys.notify(user, 'Cancel Reserve', f'ยกเลิกการจอง {rsv_id} มีค่าปรับ {fee}฿')
+            return f'✅ Cancelled with no-show fee {fee}฿'
+        sys.notify(user, 'Cancel Reserve', f'ยกเลิกการจอง {rsv_id} สำเร็จ ไม่มีค่าปรับ')
+        return '✅ Cancelled, no fee'
+    except: return '⛔ Cancel Failed'
+
+@app.post("/event/cancel_join")
+def cancel_join_event(user_id, event_id):
+    try:
+        user = sys.search_user_by_id(user_id)
+        if not user: raise Exception
+
+        event = sys.search_event_by_id(event_id)
+        if not event: raise Exception
+
+        event.remove_attendant(user) 
+        
+        sys.notify(user, 'Cancel Join Event', f'ยกเลิกการเข้าร่วมกิจกรรม {event.get_topic()} สำเร็จ')
+        return '✅ Cancel Join Event Success'
+    except:
+        return '⛔ Cancel Join Event Failed'
+    
+@app.post("/event/cancel_event")
+def cancel_event(instructor_id, event_id):
+    try:
+        ins = sys.search_instructor_by_id(instructor_id)
+        if not ins: raise Exception
+
+        event = sys.search_event_by_id(event_id)
+        if not event: raise Exception
+
+        if event.get_instructor != ins: raise Exception
+
+        for attender in event.get_attendants:
+            sys.notify(attender, 'Event Cancelled', f'กิจกรรม {event.get_topic()} ถูกยกเลิกโดยผู้สอน')
+        
+        sys.remove_event(event)
+
+        return '✅ Cancel Event Success'
+    except:
+        return '⛔ Cancel Event Failed'
+
 @app.post("/show_event_attenders")
-def show_event_attenders(instructor_id,event_id):
+def show_event_attenders(instructor_id, event_id):
     try:
         instructor = sys.search_instructor_by_id(instructor_id)
-        if not instructor : raise Exception
+        if not instructor: raise Exception
         event = sys.search_event_by_id(event_id)
-        if not event : raise Exception
+        if not event: raise Exception
         if event.get_instructor != instructor: raise Exception
-        result = []
-        for attender in event.get_attendants:
-            result.append(attender.show_info())
+        result = [attender.show_info() for attender in event.get_attendants]
         return {"message": "Show Event Attenders Complete", "data": result}
-    except :
-        return "Show Event Attenders Fail !"
+    except:
+        return "⛔ Show Event Attenders Failed"
 
-@app.get("/events")
-def list_events(user_id: str = None):
-    events = []
-    for event in sys._Club__event_list:
-        events.append({
-            "event_id": event.get_id,
-            "status": event._Event__status.value,
-            "topic": event._Event__event_topic,
-            "detail": event._Event__event_detail,
-            "start_time": event._Event__start_time.strftime("%d/%m/%Y %H:%M"),
-            "end_time": event._Event__end_time.strftime("%d/%m/%Y %H:%M"),
-            "join_fee": event.join_fee,
-            "attenders": len(event._Event__attenders),
-            "max_attender": event._Event__max_attender,
-            "certified_topic": event._Event__certified_topic.value,
-            "already_joined": event.check_attender(user_id) if user_id else None
-        })
-    return events
+@app.get("/show_available_resource")
+def show_available_resource():
+    try:
+        from enum_class import ResourceStatus
+        available_resource = []
+        for space in sys.get_space_list:
+            if space.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(space.show_info())
+        for equipment in sys.get_equipment_list:
+            if equipment.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(equipment.show_info())
+        for material in sys.get_material_list:
+            if material.get_status == ResourceStatus.AVAILABLE:
+                available_resource.append(material.show_info())
+        return {"message": "Show Available Resource Complete", "data": available_resource}
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.get("/show_all_resource")
+def show_all_resource():
+    try:
+        show_resource = []
+        for space in sys.get_space_list:
+            show_resource.append(space.show_info())
+        for equipment in sys.get_equipment_list:
+            show_resource.append(equipment.show_info())
+        for material in sys.get_material_list:
+            show_resource.append(material.show_info())
+        return {"message": "Show All Resource Complete", "data": show_resource}
+    except Exception as e:
+        return {"error": str(e)}
 
+@app.get("/show_all_events")
+def show_all_events():
+    try:
+        show_events = []
+        for event in sys.get_event_list: 
+            show_events.append(event.show_info())
+        return {"message": "Show All Events Complete", "data": show_events}
+    except Exception as e:
+        return {"error": str(e)}
 
-# Running Section
 def run_api():
     uvicorn.run("api_demo:app", host="127.0.0.1", port=8000, reload=True)
 

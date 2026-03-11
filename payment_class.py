@@ -30,6 +30,8 @@ class Cash(PaymentMethod):
         return self.__change
 
 class QRCode(PaymentMethod):
+    def __init__(self, method_id):
+        super().__init__(method_id)
     
     def validate(self, total, cost): 
         if cost < total: return False

@@ -5,7 +5,7 @@ from enum_class import EventStatus
 class Event:
     __id_counter = count(1)
 
-    def __init__(self, topic, detail, time, instructor, space, item_list, max_attender: float, join_fee: float, certified_topic):
+    def __init__(self, topic, detail, time, instructor, space, item_list, max_attender: str, join_fee: float, certified_topic):
         self.__event_id = f'WS-{next(self.__id_counter):04d}'
         self.__topic = topic
         self.__detail = detail
@@ -26,33 +26,38 @@ class Event:
     def get_instructor(self): return self.__instructor
 
     @property
-    def get_attendants(self):
-        return self.__attendants
-    
+    def get_attendants(self): return self.__attendants
+
     @property
-    def get_all_attendants(self): return self.__attendants
+    def get_certified_topic(self): return self.__certified_topic
+
+    @property
+    def get_time(self): return self.__time
+
+    @property
+    def get_space(self): return self.__space
+
+    @property
+    def get_item_list(self): return self.__item_list
 
     def search_attendant_by_id(self, user_id):
         for atd in self.__attendants:
             if atd.get_id == user_id: return atd
         return None
-    
-    @property
-    def get_certified_topic(self): return self.__certified_topic
 
-    def check_joinable(self, user):
-        if len(self.__attendants) >= float(self.__max_attender): return False
-        if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
-        if user in self.__attendants: return False
-        return True
-    
     def check_attender(self, user_id):
         for atd in self.__attendants:
             if atd.get_id == user_id: return True
         return False
-    
+
+    def check_joinable(self, user):
+        if user in self.__attendants: return False
+        if len(self.__attendants) >= float(self.__max_attender): return False
+        if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
+        return False
+
     def calculate_fee(self, user):
-        return self.__join_fee * (1 - user.get_discount)
+        return round(self.__join_fee * (1 - user.get_discount), 2)
     
     def join(self, user):
         self.__attendants.append(user)
@@ -61,8 +66,15 @@ class Event:
     def add_eq(self, ite):
         self.__item_list.extend(ite)
 
+    def remove_attendant(self, user):
+        if user in self.__attendants:
+            self.__attendants.remove(user)
+        else: raise Exception
+    
+    def update_status(self, status: EventStatus): self.__status = status
+
 class Certification:
-    def __init__(self, owner, event, certified_topic, grade = None):
+    def __init__(self, owner, event, certified_topic, grade=None):
         self.__owner = owner
         self.__event = event
         self.__certified_topic = certified_topic

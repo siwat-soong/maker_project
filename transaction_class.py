@@ -19,6 +19,17 @@ class Reservation:
             if item.get_resource == res and item.get_reserved_time.get_start_time == start_time: return item
         return None
 
+    def cancel(self, cancel_time=None):
+        if self.__status != ReserveStatus.CONFIRMED: return None
+        cancel_time = cancel_time or datetime.now()
+        earliest_start = min(item.get_reserved_time.get_start_time for item in self.__item_list)
+        hours_before = (earliest_start - cancel_time).total_seconds() / 3600
+        for item in self.__item_list:
+            item.get_resource.cancel_reserve(item.get_reserved_time)
+        self.__status = ReserveStatus.CANCELLED
+        if hours_before < 4: return 50
+        return 0
+
 class Invoice:
     __id_counter = count(1)
 
@@ -36,12 +47,10 @@ class Invoice:
     def get_user(self): return self.__user
 
     @property
-    def get_invoice_type(self):
-        return self.__invoice_type
+    def get_invoice_type(self): return self.__invoice_type
 
     @property
-    def get_detail(self):
-        return self.__detail
+    def get_detail(self): return self.__detail
 
     @property
     def get_cost(self): return self.__cost
@@ -76,6 +85,16 @@ class LineItem:
 
     @property
     def get_status(self): return self.__line_item_status
+
+    @property
+    def set_start_time(self): pass
+    @set_start_time.setter
+    def set_start_time(self, t): self.__reserved_time.set_start_time = t
+
+    @property
+    def set_end_time(self): pass
+    @set_end_time.setter
+    def set_end_time(self, t): self.__reserved_time.set_end_time = t
     
     def update_status(self, status: LineItemStatus): self.__line_item_status = status
 
@@ -97,7 +116,6 @@ class TimeRange:
     @get_end_time.setter
     def set_end_time(self, end_time): self.__end_time = end_time
 
-
     def get_duration(self):
         diff = self.__end_time - self.__start_time
         duration_mins = diff.total_seconds() / 60
@@ -111,3 +129,10 @@ class Notification:
         self.__target = target
         self.__topic = topic
         self.__detail = detail
+
+    @property
+    def get_target(self): return self.__target
+    @property
+    def get_topic(self): return self.__topic
+    @property
+    def get_detail(self): return self.__detail

@@ -8,7 +8,7 @@ class User:
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
         self.__role = UserRole.GUEST
-        self.__expired_date = datetime.now() + timedelta(days=1)
+        self.__expired_date = datetime.now()
         self.__max_reserve_days = 1
         self.__is_blacklist = False
         self.__discount = 0
@@ -38,6 +38,9 @@ class User:
     def get_name(self): return self.__name
 
     @property
+    def get_expired_date(self): return self.__expired_date
+
+    @property
     def get_max_reserve_days(self): return self.__max_reserve_days
 
     @property
@@ -45,6 +48,9 @@ class User:
 
     @property
     def get_discount(self): return self.__discount
+
+    @property
+    def get_reservation_list(self): return self.__reservation_list
 
     def show_info(self): 
         return {
@@ -56,6 +62,15 @@ class User:
             "MAX-RESERVE-DAYS": self.__max_reserve_days,
             "BLACKLIST": self.__is_blacklist
         }
+
+    def show_notification(self):
+        return [
+            {
+                "topic": n.get_topic,
+                "detail": n.get_detail
+            }
+            for n in self.__notification_list
+        ]
 
     def add_certificate(self, certificate): self.__certificate_list.append(certificate)
     def add_reservation(self, reservation): self.__reservation_list.append(reservation)
@@ -74,7 +89,9 @@ class User:
         return None
 
     def check_blacklist(self): return self.__is_blacklist
-    def check_invoice(self): return self.__invoice_list
+
+    def check_invoice(self): return len(self.__invoice_list) > 0
+
     def check_expertise(self, resource):
         if not self.__certificate_list:
             if resource.check_expertise(None): return True
@@ -86,8 +103,10 @@ class User:
     def update_role(self, role: UserRole): self.__role = role
 
     def subscribe(self):
-        self.__role = UserRole.MEMBER
         self.__expired_date = datetime.now() + timedelta(days=365)
+
+    def activate_membership(self):
+        self.__role = UserRole.MEMBER
         self.__max_reserve_days = 14
         self.__discount = 0.2
     
@@ -110,11 +129,18 @@ class User:
         self.__line_item_list.extend(lit)
     
     def check_duplicate_cart(self, res, start_time, end_time):
+        from resource_class import Space, Material
         for lit in self.__line_item_list:
-            if lit.get_resource == res and lit.get_reserved_time.check_overlap(start_time, end_time): return True
+            lit_res = lit.get_resource
+            if not isinstance(lit_res, (Space, Material)): continue
+            if lit_res == res and lit.get_reserved_time.check_overlap(start_time, end_time): return True
         return False
 
     def clear_line_item(self): self.__line_item_list.clear()
+
+    def remove_invoice(self, inv):
+        if inv in self.__invoice_list:
+            self.__invoice_list.remove(inv)
 
 class Instructor(User):
     def __init__(self, user_id, name, tel, expertise, instructor_fee: float):
@@ -134,6 +160,13 @@ class Instructor(User):
         for t in self.__schedule:
             if t.check_overlap(start_time, end_time): return False
         return True
+    
+    def add_schedule(self, time_range):
+        self.__schedule.append(time_range)
+    
+    def remove_schedule(self, time_range):
+        if time_range in self.__schedule:
+            self.__schedule.remove(time_range)
 
 class Admin:
     def __init__(self, admin_id, department):
