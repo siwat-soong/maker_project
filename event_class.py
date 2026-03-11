@@ -70,6 +70,8 @@ class Event:
         if user in self.__attendants:
             self.__attendants.remove(user)
         else: raise Exception
+    
+    def update_status(self, status: EventStatus): self.__status = status
 
 class Certification:
     def __init__(self, owner, event, certified_topic, grade=None):

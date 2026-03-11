@@ -128,8 +128,8 @@ class Club:
                 item_time = item.get_reserved_time
                 if hasattr(resource, 'cancel_reserve'):
                     resource.cancel_reserve(item_time)
-                    
-            self.__event_list.remove(event)
+            from enum_class import EventStatus
+            event.update_status(EventStatus.CLOSED)
             return True
         return False
 
