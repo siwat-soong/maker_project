@@ -5,6 +5,15 @@ mcp = FastMCP("maker_club_mcp")
 
 BASE = "http://127.0.0.1:8000"
 
+"""
+• User: รหัส "4517" (Butter), รหัส "9999" (Akiko), รหัส "0001" (God) 
+• Instructor: รหัส "4244" (Thana) 
+• Admin: รหัส "3308" (Amnach) 
+• ทรัพยากร: "SPA-MEET-001" (ห้องประชุม), "SPA-LAB-001" (ห้องแล็บ), "EQM-3DP-001" 
+(เครื่องปริ้นท์ 3D), "MAT-PLA-001" (พลาสติก Filament) 
+• วิธีชำระเงิน: รหัส "C-0001" (เงินสด)
+"""
+
 @mcp.tool()
 def show_user_info(user_id: str) -> dict:
     """
@@ -37,7 +46,7 @@ def pay(user_id: str, inv_id: str, cost: float, method_id: str) -> dict:
     ใช้สำหรับชำระเงินบิล (Invoice) ต่างๆ
     - inv_id: รหัสใบแจ้งหนี้ (เช่น INV-xxxx)
     - cost: จำนวนเงินที่จ่ายเข้ามา
-    - method_id: รหัสวิธีชำระเงิน (เช่น C-0001 สำหรับเงินสด)
+    - method_id: รหัสวิธีชำระเงิน (เช่น C-0001 สำหรับเงินสด, Q-0001 สำหรับ Qrcode)
     """
     return requests.post(f"{BASE}/pay", params={
         "user_id": user_id,
@@ -49,7 +58,7 @@ def pay(user_id: str, inv_id: str, cost: float, method_id: str) -> dict:
 @mcp.tool()
 def add_to_cart(user_id: str, item_id: str, start_time: str, end_time: str, amount: float = 1) -> dict:
     """
-    นำทรัพยากร (สถานที่/อุปกรณ์/วัสดุ) เข้าตะกร้า (Cart) ก่อนทำการจอง
+    นำทรัพยากร (สถานที่/อุปกรณ์/วัสดุ) เข้าตะกร้า (Cart) ก่อนทำการจอง หรือซื้อ
     !!! สำคัญ: เวลา start_time และ end_time ต้องอยู่ในรูปแบบ "dd/mm/yyyy,HH:MM" เท่านั้น (เช่น "11/03/2026,15:00")
     ห้ามมีเว้นวรรคหลังเครื่องหมายลูกน้ำเด็ดขาด
     """
@@ -72,7 +81,7 @@ def reserve(user_id: str) -> dict:
 @mcp.tool()
 def cancel_reserve(user_id: str, rsv_id: str) -> dict:
     """
-    ยกเลิกการจองทรัพยากร
+    ยกเลิกการจองทรัพยากรทุกชนิดจากรหัสการจอง
     - rsv_id: รหัสการจอง (เช่น RSV-xxxx)
     """
     return requests.post(f"{BASE}/cancel_reserve", params={
@@ -121,7 +130,7 @@ def return_equipment(user_id: str, rsv_id: str, equipment_id: str, start_time: s
 
 @mcp.tool()
 def create_event(admin_id: str, topic: str, detail: str, start_time: str, end_time: str,
-                 instructor_id: str, space_id: str, max_attender: int, join_fee: float) -> dict:
+                 instructor_id: str, space_id: str, max_attender: int, c_fee: float) -> dict:
     """
     สร้างกิจกรรมหรือ Workshop (เฉพาะ Admin)
     !!! สำคัญ: เวลา start_time และ end_time ต้องอยู่ในรูปแบบ "dd/mm/yyyy,HH:MM" เท่านั้น (เช่น "15/03/2026,13:00")
@@ -135,13 +144,13 @@ def create_event(admin_id: str, topic: str, detail: str, start_time: str, end_ti
         "instructor_id": instructor_id,
         "space_id": space_id,
         "max_attender": max_attender,
-        "join_fee": join_fee
+        "join_fee": c_fee
     }).json()
 
 @mcp.tool()
 def join_event(user_id: str, event_id: str) -> dict:
     """
-    ใช้สำหรับให้ผู้ใช้งาน (User) สมัครเข้าร่วมกิจกรรม (Event)
+    ใช้สำหรับให้ผู้ใช้งาน (User) ใครก็ได้สมัครเข้าร่วมกิจกรรม (Event)
     """
     return requests.post(f"{BASE}/event/join", params={
         "user_id": user_id,
@@ -194,7 +203,7 @@ def add_certificate(instructor_id: str, event_id: str, user_id: str, score: floa
 @mcp.tool()
 def show_event_attenders(instructor_id: str, event_id: str) -> dict:
     """
-    ใช้สำหรับดูรายชื่อผู้ที่เข้าร่วมกิจกรรม (Attendants) ทั้งหมดใน Event นั้น
+    ใช้สำหรับให้ instructor ดูรายชื่อผู้ที่เข้าร่วมกิจกรรม (Attendants) ทั้งหมดใน Event นั้น
     """
     return requests.post(f"{BASE}/show_event_attenders", params={
         "instructor_id": instructor_id,

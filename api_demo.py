@@ -40,7 +40,6 @@ def subscribe(user_id):
         if user is None: raise Exception
         elif user.check_blacklist(): raise Exception
         elif user.check_invoice(): raise Exception
-        elif user.get_expired_date > datetime.now(): raise Exception
         else: 
             user.subscribe()
             inv = user.create_invoice(InvoiceType.SUBSCRIBE, f'{user.get_name} subscribe member from {datetime.now()} for 365 days', 100)
@@ -60,8 +59,8 @@ def pay(user_id, inv_id, cost: float, method_id):
         if(method.validate(inv.get_cost, cost)): 
             change = method.process_payment()
             user.create_receipt(inv, change, method)
-            if inv.get_invoice_type == InvoiceType.SUBSCRIBE:
-                user.activate_membership()
+            # if inv.get_invoice_type == InvoiceType.SUBSCRIBE:
+            #     user.activate_membership()
             sys.notify(user, 'Payment', f'ชำระเงิน {inv.get_cost}฿ สำเร็จ ทอน {change}฿')
             return f'✅ Pay Success with change {change}'
         else: raise Exception
@@ -199,6 +198,7 @@ def join_event(user_id, event_id):
         event.join(user)
 
         user.create_invoice(InvoiceType.EVENT, f'You has joined event {event.get_id}', fee)
+        
         sys.notify(user, 'Join Event', f'เข้าร่วม event {event.get_id} สำเร็จ ค่าเข้าร่วม {fee}฿')
         return f'✅ Join Event Success, fee = {fee}$'
 
@@ -273,7 +273,7 @@ def check_in(user_id, rsv_id, space_id, start_time):
         if not rsv: raise Exception
 
         space = sys.search_space_by_id(space_id)
-        lit = rsv.search_item_list(space, start_time)
+        lit = rsv.search_item_list(space)
         if not lit: raise Exception
 
         if lit.get_status: raise Exception
@@ -285,8 +285,8 @@ def check_in(user_id, rsv_id, space_id, start_time):
         now = datetime.now()
         diff_mins = (start_time - now).total_seconds() / 60
         if diff_mins > 15: raise Exception
-        elif diff_mins < -15:
-            if (diff_mins * -1) <= 15: return '⚠️ Fine : 0.00$'
+        elif diff_mins < 0:
+            # if (diff_mins * -1) <= 15: return '⚠️ Fine : 0.00$'
     
             base_fine = 50 
             rate_per_half_hour = 20
@@ -318,13 +318,18 @@ def check_out(user_id, rsv_id, space_id, start_time):
         if not rsv: raise Exception
 
         space = sys.search_space_by_id(space_id)
-        lit = rsv.search_item_list(space, start_time)
+        
+        print("DEBUG")
+        lit = rsv.search_item_list(space)
         if not lit: raise Exception
 
+        print("DEBUG")
         if lit.get_status != LineItemStatus.CHECKED_IN: raise Exception
 
+
+        if datetime.now() - lit.get_end_time > 0: fee = 150
         lit.set_end_time = datetime.now()
-        fee = space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
+        fee += space.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
         space.cancel_reserve(lit.get_reserved_time)
 
@@ -347,10 +352,10 @@ def return_eq(user_id, rsv_id, equipment_id, start_time):
         if not rsv: raise Exception
 
         eq = sys.search_equipment_by_id(equipment_id)
-        lit = rsv.search_item_list(eq, start_time)
+        lit = rsv.search_item_list(eq)
         if not lit: raise Exception
 
-        lit.set_end_time = datetime.now()
+        # lit.set_end_time = datetime.now()
         fee = eq.calculate_fee(user, lit.get_amount, lit.get_reserved_time.get_duration())
         lit.update_status(LineItemStatus.COMPLETED)
         eq.cancel_reserve(lit.get_reserved_time)
@@ -387,7 +392,7 @@ def cancel_join_event(user_id, event_id):
         event = sys.search_event_by_id(event_id)
         if not event: raise Exception
 
-        event.remove_attendant(user) 
+        event.remove_attendant(user.get_id) 
         
         sys.notify(user, 'Cancel Join Event', f'ยกเลิกการเข้าร่วมกิจกรรม {event.get_topic()} สำเร็จ')
         return '✅ Cancel Join Event Success'
@@ -464,7 +469,7 @@ def show_all_events():
     try:
         show_events = []
         for event in sys.get_event_list: 
-            show_events.append(event.show_info())
+            show_events.append(event.show())
         return {"message": "Show All Events Complete", "data": show_events}
     except Exception as e:
         return {"error": str(e)}

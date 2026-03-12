@@ -6,7 +6,7 @@ class Reservation:
     __id_counter = count(1)
 
     def __init__(self, owner, item_list):
-        self.__reservation_id = f'REQ-{next(self.__id_counter):04d}'
+        self.__reservation_id = f'RSV-{next(self.__id_counter):04d}'
         self.__owner = owner
         self.__item_list = item_list
         self.__status = ReserveStatus.CONFIRMED
@@ -16,7 +16,7 @@ class Reservation:
 
     def search_item_list(self, res, start_time):
         for item in self.__item_list:
-            if item.get_resource == res and item.get_reserved_time.get_start_time == start_time: return item
+            if item.get_resource == res: return item
         return None
 
     def cancel(self, cancel_time=None):

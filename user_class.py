@@ -8,7 +8,7 @@ class User:
         self.__name = self.__validate_input_name(name)
         self.__tel = self.__validate_input_tel(tel)
         self.__role = UserRole.GUEST
-        self.__expired_date = datetime.now()
+        self.__expired_date = datetime.now() + timedelta(days=1)
         self.__max_reserve_days = 1
         self.__is_blacklist = False
         self.__discount = 0
@@ -103,7 +103,10 @@ class User:
     def update_role(self, role: UserRole): self.__role = role
 
     def subscribe(self):
+        self.__role = UserRole.MEMBER
         self.__expired_date = datetime.now() + timedelta(days=365)
+        self.__max_reserve_days = 14
+        self.__discount = 0.2
 
     def activate_membership(self):
         self.__role = UserRole.MEMBER

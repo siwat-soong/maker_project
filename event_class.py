@@ -51,8 +51,8 @@ class Event:
         return False
 
     def check_joinable(self, user):
-        if user in self.__attendants: return False
-        if len(self.__attendants) >= float(self.__max_attender): return False
+        if user in self.get_attendants: return False
+        if len(self.get_attendants) >= float(self.__max_attender): return False
         if self.__status == EventStatus.SCHEDULED or self.__status == EventStatus.OPEN: return True
         return False
 
@@ -60,18 +60,35 @@ class Event:
         return round(self.__join_fee * (1 - user.get_discount), 2)
     
     def join(self, user):
-        self.__attendants.append(user)
+        print("JOIN")
+        self.get_attendants.append(user)
         if len(self.__attendants) >= float(self.__max_attender): self.__status = EventStatus.FULL
     
     def add_eq(self, ite):
         self.__item_list.extend(ite)
+    
+    def rm_uid(self, user): self.__attendants.remove(user)
 
-    def remove_attendant(self, user):
-        if user in self.__attendants:
-            self.__attendants.remove(user)
-        else: raise Exception
+    def remove_attendant(self, user_id):
+        for u in self.get_attendants:
+            if u.get_id == user_id:
+                print(u)
+                self.rm_uid(u)
+                return 0
+        raise Exception
     
     def update_status(self, status: EventStatus): self.__status = status
+    
+    def show(self):
+        return {
+        "ID": self.__event_id,
+        "TOPIC": self.__topic,
+        "DETAIL": self.__detail,
+        "TIME": self.__time,
+        "FEE": self.__join_fee,
+        "CERTIFIED": self.__certified_topic,
+        "STATUS": self.__status
+        }
 
 class Certification:
     def __init__(self, owner, event, certified_topic, grade=None):
