@@ -329,7 +329,7 @@ def mcp_pay_invoice(uid: str, cost: float, method: str) -> dict:
 
 @mcp.tool()
 def mcp_use_equipment(eq_id: str, amount: float = None) -> dict:
-    """ลดจำนวนการใช้งานอุปกรณ์ (Use)"""
+    """ใช้งานอุปกรณ์ (Use) เพื่อจำลองการใช้งาน"""
     return use(eq_id, amount)
 
 @mcp.tool()
