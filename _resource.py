@@ -279,7 +279,7 @@ class Material(Resource):
         self.__stock_qty += amount
         if self.__stock_qty > self.__minimum_stock: self.update_status(ResourceStatus.AVAILABLE)
     
-    def calculate_fee(self, user, amount): 
+    def calculate_fee(self, user, amount, duration): 
         total = amount * self.COST_PER_UNIT
         return total
     

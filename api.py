@@ -277,7 +277,8 @@ def reserve(uid: str):
         for cart in user.get_cart:
             if cart.get_resource.get_rsv_type == ReserveType.RESERVE and cart.get_status == ReservedStatus.IN_CART:
                 res = cart.get_resource
-                if not res.validate(user, cart.get_amount, cart.get_time.get_start_time, cart.get_time.get_end_time): raise Exception(f"ทรัพยากร {res.get_id} ไม่พร้อมให้ทำการจองแล้ว")
+                if not res.validate(user, cart.get_amount, cart.get_time.get_start_time, cart.get_time.get_end_time): 
+                    raise Exception(f"ทรัพยากร {res.get_id} ไม่พร้อมให้ทำการจองแล้ว")
                 cart.reserve()
                 reserved.append(cart)
 
