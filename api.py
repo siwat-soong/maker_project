@@ -210,7 +210,7 @@ def add_to_cart(
     ):
     try:
         from _enum import ReserveType
-        user = user = sys.search_user_from_id(uid)
+        user = sys.search_user_from_id(uid)
         if not user: raise Exception("ไม่พบ user id นี้")
 
         if start_time is not None and end_time is not None:
