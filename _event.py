@@ -94,7 +94,6 @@ class Certification:
         self.__certified_topic = certified_topic
         self.__grade = grade
         self.__certified_date = datetime.now()
-        self.__expired_date = datetime.now() + timedelta(days=365)
     
     @property
     def get_expertise(self): return self.__certified_topic

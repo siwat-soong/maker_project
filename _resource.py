@@ -27,6 +27,9 @@ class Resource(ABC):
 
     def update_status(self, status): self.__status = status
 
+    def process_cart(self): return [self]
+    def to_cancel(self): return [self]
+
 class Space(Resource):
     GUEST_RATE_PER_HR  = 50
     MEMBER_FREE_HR = 2
@@ -152,10 +155,6 @@ class Equipment(Resource):
         if not user.check_expertise(self.__required_cert): return False
 
         return True
-    
-    def process_cart(self): return [self]
-
-    def to_cancel(self): return [self]
 
 class ThreeDPrinter(Equipment):
     RATE_MEMBER = 0.5
@@ -194,6 +193,7 @@ class ThreeDPrinter(Equipment):
 class LaserCutter(Equipment):
     RATE_MEMBER = 5.0
     RATE_GUEST  = 10.0
+    OWN_MATERIAL_SURCHARGE = 0.20
 
     def __init__(self, resource_id, location, current_material):
         super().__init__(resource_id, EquipmentType.LASER_CUTTER, Expertise.LASER_CUTTER, location)
@@ -287,9 +287,6 @@ class Material(Resource):
         if self.__stock_qty - amount < self.__minimum_stock: return False
         if self.get_status != ResourceStatus.AVAILABLE: return False
         return True
-
-    def process_cart(self): return [self]
-    def to_cancel(self): return [self]
 
     def detail(self):
         data = super().detail()
