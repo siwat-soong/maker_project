@@ -612,7 +612,7 @@ def create_event(uid: str, topic: str, detail: str, start_time: str, end_time: s
     except Exception as e: return { "ERROR": str(e) }
 
 @app.post("/event/open")
-def unjoin(uid: str, event_id: str):
+def open_event(uid: str, event_id: str):
     try:
         admin = sys.search_admin_from_id(uid)
         if not admin: raise Exception("ไม่พบ admin ท่านนี้")

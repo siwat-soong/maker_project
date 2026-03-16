@@ -400,9 +400,7 @@ def mcp_admin_create_event(uid: str, topic: str, detail: str, start_time: str, e
 @mcp.tool()
 def mcp_admin_open_event(uid: str, event_id: str) -> dict:
     """(สำหรับ Admin) เปิดรับสมัครกิจกรรม"""
-    # หมายเหตุ: ในโค้ดเดิม def ใช้ชื่อ unjoin แต่รับ endpoint /event/open (เรียก event.open_event())
-    # ผมสร้าง wrapper ข้ามไปหา endpoint ให้ตรงตาม logic ต้นฉบับครับ
-    return app.routes[[r.path for r in app.routes].index('/event/open')].endpoint(uid, event_id)
+    return open_event(uid, event_id)
 
 @mcp.tool()
 def mcp_admin_close_event(uid: str, event_id: str, end_time: str) -> dict:
