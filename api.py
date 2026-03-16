@@ -21,6 +21,17 @@ def show_event_info(event_id: str):
         return event.detail()
     except Exception as e: return { "ERROR": str(e) }
 
+@app.get("/event/attender")
+def show_event_attender(ins_id: str, event_id: str):
+    try:
+        ins = sys.search_instructor_from_id(ins_id)
+        if not ins: raise Exception("ไม่พบวิทยากรท่านนี้")
+        event = sys.search_event_from_id(event_id)
+        if not event: raise Exception("ไม่พบกิจกรรมนี้")
+        if event.get_ins != ins: raise Exception("คุณไม่ได้เป็นวิทยากรของกิจกรรมนี้")
+        return [x.detail() for x in event.get_attendants]
+    except Exception as e: return { "ERROR": str(e) }
+
 @app.get("/event/all")
 def show_all_event():
     try:

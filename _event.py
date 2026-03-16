@@ -39,6 +39,9 @@ class Event:
     @property
     def get_cert(self): return self.__certified_topic
 
+    @property
+    def get_attendants(self): return self.__attendants
+
     def check_attendant(self, user): return user in self.__attendants
     
     def join(self, user):

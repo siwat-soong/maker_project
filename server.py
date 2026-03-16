@@ -39,6 +39,11 @@ def mcp_show_event_info(event_id: str) -> dict:
     return show_event_info(event_id)
 
 @mcp.tool()
+def mcp_show_event_attender(ins_id: str, event_id: str) -> list | dict:
+    """ดูรายละเอียดและรายชื่อของผู้เข้าร่วมกิจกรรม (Attendants) ทั้งหมดในกิจกรรมนั้นๆ โดยต้องระบุรหัสวิทยากรและรหัสกิจกรรม"""
+    return show_event_attender(ins_id, event_id)
+
+@mcp.tool()
 def mcp_show_all_event() -> dict:
     """
     ดูรายการกิจกรรมทั้งหมดในระบบ
