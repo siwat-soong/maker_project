@@ -1,154 +1,116 @@
-from datetime import datetime, time
-from user_class import User, Instructor, Admin
-from payment_class import Cash, QRCode
-from resource_class import Space, ThreeDPrinter, LaserCutter, ToolSet, Filament, Acrylic, Plank
-from enum_class import SpaceType, Expertise
-from transaction_class import TimeRange
+from _user import *
+from _payment import *
+from _resource import *
+from _event import *
+
+from datetime import time
 
 class Club:
-    def __init__(self, name):
-        self.__name = name
-        
-        # User Storage
+    def __init__(self):
+        # User
         self.__user_list = []
         self.__instructor_list = []
         self.__admin_list = []
-
-        # Resource Storage
+        
+        # Resource
         self.__space_list = []
         self.__equipment_list = []
         self.__material_list = []
 
-        # Payment Method Storage
-        self.__payment_method_list = []
-
-        # Event Storage
+        # Event
         self.__event_list = []
+
+        # Payment
+        self.__payment_method_list = []
     
-    # Add Method
     def add_user(self, user: User): self.__user_list.append(user)
-    def add_instructor(self, instructor): self.__instructor_list.append(instructor)
-    def add_admin(self, admin): self.__admin_list.append(admin)
+    def add_instructor(self, ins: Instructor): 
+        self.__instructor_list.append(ins)
+        self.__user_list.append(ins)
+    def add_admin(self, admin: Admin): self.__admin_list.append(admin)
+    def add_space(self, space: Space): self.__space_list.append(space)
+    def add_equipment(self, equipment: Equipment): self.__equipment_list.append(equipment)
+    def add_material(self, material: Material): self.__material_list.append(material)
+    def add_event(self, event: Event): self.__event_list.append(event)
+    def add_payment_method(self, payment_method: PaymentMethod): self.__payment_method_list.append(payment_method)
 
-    def add_space(self, space): self.__space_list.append(space)
-    def add_equipment(self, equipment): self.__equipment_list.append(equipment)
-    def add_material(self, material): self.__material_list.append(material)
+    @property
+    def get_instructors(self): return self.__instructor_list
 
-    def add_payment_method(self, payment_method): self.__payment_method_list.append(payment_method)
-    
-    def add_event(self, event): self.__event_list.append(event)
+    @property
+    def get_spaces(self): return self.__space_list
+    @property
+    def get_equipments(self): return self.__equipment_list
+    @property
+    def get_materials(self): return self.__material_list
 
-    # Search Method
-    def search_user_by_id(self, user_id):
+    @property
+    def get_events(self): return self.__event_list
+
+    def search_user_from_id(self, uid: str):
         for user in self.__user_list:
-            if user.get_id == user_id: return user
+            if user.get_id == uid: return user
         return None
     
-    def search_admin_by_id(self, admin_id):
+    def search_admin_from_id(self, uid: str):
         for admin in self.__admin_list:
-            if admin.get_id == admin_id: return admin
+            if admin.get_id == uid: return admin
         return None
     
-    def search_instructor_by_id(self, instructor_id):
+    def search_instructor_from_id(self, uid: str):
         for instructor in self.__instructor_list:
-            if instructor.get_id == instructor_id: return instructor
+            if instructor.get_id == uid: return instructor
         return None
 
-    def search_method_by_id(self, method_id):
-        for method in self.__payment_method_list:
-            if method.get_id == method_id: return method
+    def search_space_from_id(self, res_id: str):
+        for sp in self.__space_list:
+            if sp.get_id == res_id: return sp
+        return None
+
+    def search_equipment_from_id(self, res_id: str):
+        for eq in self.__equipment_list:
+            if eq.get_id == res_id: return eq
         return None
     
-    def search_space_by_id(self, space_id):
-        for space in self.__space_list:
-            if space.get_id == space_id: return space
+    def search_material_from_id(self, res_id: str):
+        for mat in self.__material_list:
+            if mat.get_id == res_id: return mat
         return None
     
-    def search_equipment_by_id(self, equipment_id):
-        for equipment in self.__equipment_list:
-            if equipment.get_id == equipment_id: return equipment
-        return None
-    
-    def search_material_by_id(self, material_id):
-        for material in self.__material_list:
-            if material.get_id == material_id: return material
-        return None
-    
-    def search_event_by_id(self, event_id):
+    def search_event_from_id(self, event_id: str):
         for event in self.__event_list:
             if event.get_id == event_id: return event
         return None
-
-    def search_resource_by_id(self, resource_id):
-        res = self.search_space_by_id(resource_id)
-        if res is not None: return res
-        res = self.search_equipment_by_id(resource_id)
-        if res is not None: return res
-        res = self.search_material_by_id(resource_id)
-        if res is not None: return res
-
-    # List Properties
-    @property
-    def get_space_list(self): return self.__space_list
-
-    @property
-    def get_equipment_list(self): return self.__equipment_list
-
-    @property
-    def get_material_list(self): return self.__material_list
-
-    @property
-    def get_event_list(self): return self.__event_list
-
-    # Notification Methods
-    def notify(self, user, topic, detail):
-        from transaction_class import Notification
-        user.add_notification(Notification(user, topic, detail))
-
-    def broadcast(self, topic, detail):
-        from transaction_class import Notification
-        for user in self.__user_list:
-            user.add_notification(Notification(user, topic, detail))
-        for ins in self.__instructor_list:
-            ins.add_notification(Notification(ins, topic, detail))\
     
-    def remove_event(self, event):
-        if event in self.__event_list:
-            space = event.get_space
-            time_range = event.get_time
-            if space and time_range:
-                space.cancel_reserve(time_range)
-            
-            instructor = event.get_instructor
-            if instructor and time_range:
-                instructor.remove_schedule(time_range)
-            
-            for item in event.get_item_list:
-                resource = item.get_resource
-                item_time = item.get_reserved_time
-                if hasattr(resource, 'cancel_reserve'):
-                    resource.cancel_reserve(item_time)
-            from enum_class import EventStatus
-            event.update_status(EventStatus.CLOSED)
-            return True
-        return False
+    def search_payment_from_type(self, type: str):
+        for pm in self.__payment_method_list:
+            if pm.get_type.value == type: return pm
+        return None
+    
+    def create_event(self, topic, detail, time, ins, space, items, max_attender, join_fee):
+        event = Event(topic, detail, time, ins, space, items, max_attender, join_fee)
+        self.__event_list.append(event)
+    
+    def broadcast(self, topic, detail):
+        for user in self.__user_list:
+            user.notify(topic, detail)
 
 def system_init():
     try:
-        maker = Club("Maker Club")
-        butter = User("4517", "Butter", "0144796685")
-        akiko = User("9999", "Akiko", "0800000000")
-        god = User("0001", "God", "0999999999")
-        from event_class import Certification
+        sys = Club()
+        dummy1 = User("0001", "Alpha", "0123456789")
+        cash = Cash(20000)
+        qr = QRCode()
+
+        god = User("0002", "God", "0999999999")
         for exp in [Expertise.ADVANCED, Expertise.THREE_D_PRINTER, Expertise.LASER_CUTTER]:
             god.add_certificate(Certification(god, None, exp))
+        
         thana = Instructor("4244", "Thana", "0671799986", Expertise.THREE_D_PRINTER, 200)
         jirasak = Instructor("4245", "Jirasak", "0671799987", Expertise.LASER_CUTTER, 150)
         thanunchai = Instructor("4246", "Thanunchai", "0671799988", Expertise.ADVANCED, 100)
         amnach = Admin("3308", "Computer Engineering")
         orachat = Admin("3309", "Information Technology")
-        cash = Cash("C-0001", 3000)
-        qr = QRCode("Q-0001")
 
         lab_a = Space("SPA-LAB-001", SpaceType.LABORATORY, 30, time(6, 0), time(22, 0))
         lab_b = Space("SPA-LAB-002", SpaceType.LABORATORY, 30, time(6, 0), time(22, 0))
@@ -164,37 +126,37 @@ def system_init():
         printer_a = ThreeDPrinter("EQM-3DP-001", lab_a, filament_a)
         laser_a = LaserCutter("EQM-LSC-001", lab_a, acrylic_a)
         tool_a = ToolSet("EQM-TOOL-001", Expertise.ADVANCED, desk_a, 10)
-        tool_b = ToolSet("EQM-TOOL-002", None, desk_a, 15)
+        tool_b = ToolSet("EQM-TOOL-002", Expertise.ADVANCED, None, 15)
+        tool_c = ToolSet("EQM-TOOL-003", None, None, 20)
 
-        maker.add_user(butter)
-        maker.add_user(akiko)
-        maker.add_user(god)
-        maker.add_instructor(thana)
-        maker.add_instructor(jirasak)
-        maker.add_instructor(thanunchai)
-        maker.add_admin(amnach)
-        maker.add_admin(orachat)
-        maker.add_payment_method(cash)
-        maker.add_payment_method(qr)
+        sys.add_user(dummy1)
+        sys.add_user(god)
+        sys.add_instructor(thana)
+        sys.add_instructor(jirasak)
+        sys.add_instructor(thanunchai)
+        sys.add_admin(amnach)
+        sys.add_admin(orachat)
+        sys.add_payment_method(cash)
+        sys.add_payment_method(qr)
 
-        maker.add_space(lab_a)
-        maker.add_space(lab_b)  
-        maker.add_space(desk_a)
-        maker.add_space(desk_b)
-        maker.add_space(meet_a)
-        maker.add_space(meet_b)
+        sys.add_space(lab_a)
+        sys.add_space(lab_b)  
+        sys.add_space(desk_a)
+        sys.add_space(desk_b)
+        sys.add_space(meet_a)
+        sys.add_space(meet_b)
 
-        maker.add_material(filament_a)
-        maker.add_material(acrylic_a)
-        maker.add_material(plank_a)
+        sys.add_material(filament_a)
+        sys.add_material(acrylic_a)
+        sys.add_material(plank_a)
 
-        maker.add_equipment(printer_a)
-        maker.add_equipment(laser_a)
-        maker.add_equipment(tool_a)
-        maker.add_equipment(tool_b)
+        sys.add_equipment(laser_a)
+        sys.add_equipment(printer_a)
+        sys.add_equipment(tool_a)
+        sys.add_equipment(tool_b)
+        sys.add_equipment(tool_c)
 
-        print("✅ Init Success")
-        return maker
-    except:
-        print("⛔ Init Failed")
-        
+        return sys
+    
+    except Exception as e:
+        print(f"{e}")
