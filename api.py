@@ -283,8 +283,10 @@ def reserve(uid: str):
 
         if not reserved: raise Exception("ไม่มีทรัพยากรที่จองได้ในตะกร้า")
 
-        user.create_reservation(reserved)
+        rsv = user.create_reservation(reserved)
         user.clear_cart(reserved)
+
+        user.notify("RESERVE", f"You reserved resources {rsv.get_id}! Please check in on time. Search Reservation for more information")
 
         return { "STATUS": "SUCCESS" }
 
@@ -311,6 +313,9 @@ def cancel_reserve(uid: str, rsv_id: str, res_id: Optional[str] = None, start_ti
         if not item_to_cancel: raise Exception("ไม่พบทรัพยากรที่ต้องการยกเลิก")
         total_fine = 0
         for item in item_to_cancel: total_fine += item.cancel()
+
+        user.notify("CANCEL", f"You cancelled {rsv_id}!")
+
         if total_fine > 0:
             from _enum import InvoiceType
             user.create_invoice(InvoiceType.FINE, [str(i.get_resource.get_id) for i in item_to_cancel], total_fine)
@@ -387,6 +392,8 @@ def check_in(uid: str, rsv_id: str, res_id: str, start_time: str, check_in_time:
             if not items: raise Exception("ทรัพยากรถูกเช็คอินครบแล้ว")
             for item in items: item.check_in()
         
+        user.notify("CHECK IN", f"You checked in {res_id} from {rsv_id}!")
+        
         return { "STATUS": "SUCCESS" }
 
     except Exception as e: return { "ERROR": str(e) }
@@ -417,6 +424,8 @@ def check_out(uid: str, rsv_id: str, res_id: str, check_out_time: Optional[str] 
         if total > 0:
             from _enum import InvoiceType
             user.create_invoice(InvoiceType.RESOURCE, "CHECK OUT", total)
+        
+        user.notify("CHECK OUT", f"You checked out {res_id} from {rsv_id} with total {total}! Please purchased.")
         
         return { "STATUS": "SUCCESS", "TOTAL_FEE": "$" + str(total)}
 
@@ -612,6 +621,8 @@ def unjoin(uid: str, event_id: str):
         if not event: raise Exception("ไม่พบกิจกรรมนี้")
 
         event.open_event()
+
+        sys.broadcast("OPEN EVENT", "Event {event.get_id} was openned! Please join us. Show Event for more details.")
         
         return { "STATUS": "SUCCESS" }
 
@@ -645,6 +656,8 @@ def close_event(uid: str, event_id: str, end_time: str):
 
         refund = False
         if end_time < event.get_time.get_start_time: refund = True
+
+        sys.broadcast("CLOSE EVENT", "Event {event.get_id} closed.")
 
         return { "STATUS": "SUCCESS", "REFUND": refund}
     except Exception as e: return { "ERROR": str(e) }
@@ -701,9 +714,6 @@ def grade_event(ins_id: str, event_id: str, uid: str, score: float):
 
         if event.get_ins != ins: raise Exception("คุณไม่ได้เป็นวิทยากรของกิจกรรมนี้")
         if not event.check_attendant(user): raise Exception("ผู้ใช้ไม่ได้เข้าร่วมกิจกรรมนี้")
-
-        from _enum import EventStatus
-        if event.get_status != EventStatus.CLOSED: raise Exception("ไม่สามารถให้คะแนนได้ก่อนจบกิจกรรม")
 
         if score > 75: grade = 'A'
         elif score > 50: grade = 'B'

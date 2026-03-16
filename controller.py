@@ -90,6 +90,10 @@ class Club:
     def create_event(self, topic, detail, time, ins, space, items, max_attender, join_fee):
         event = Event(topic, detail, time, ins, space, items, max_attender, join_fee)
         self.__event_list.append(event)
+    
+    def broadcast(self, topic, detail):
+        for user in self.__user_list:
+            user.notify(topic, detail)
 
 def system_init():
     try:

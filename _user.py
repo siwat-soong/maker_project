@@ -77,6 +77,7 @@ class User:
         from _transaction import Reservation
         rsv = Reservation(self, item_list)
         self.__reservation_list.append(rsv)
+        return rsv
     
     def update_role(self, role): self.__role = role
 
